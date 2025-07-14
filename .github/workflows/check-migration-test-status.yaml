@@ -1,0 +1,233 @@
+name: Check Migration Test PR Status
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # Runs daily at 08:00 UTC
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  check-migration-test-status:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: write
+      checks: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find migration-test PRs
+        id: find_prs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find all open PRs with migration-test label
+          echo "🔍 Searching for migration-test PRs..."
+
+          # Get PRs with migration-test label using gh CLI
+          prs_json=$(gh pr list --state open --label "migration-test" --json number,title,url,headRefOid,createdAt,updatedAt --limit 100)
+
+          # Count the PRs
+          count=$(echo "$prs_json" | jq length)
+
+          echo "Found $count migration-test PRs"
+
+          # Set outputs for next step
+          echo "prs=$prs_json" >> $GITHUB_OUTPUT
+          echo "count=$count" >> $GITHUB_OUTPUT
+
+          # Display found PRs
+          if [ "$count" -gt 0 ]; then
+            echo "📋 Found PRs:"
+            echo "$prs_json" | jq -r '.[] | "- PR #\(.number): \(.title)"'
+          else
+            echo "No migration-test PRs found"
+          fi
+
+      - name: Check PR status and create issues for failures
+        if: steps.find_prs.outputs.count && steps.find_prs.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Parse PRs from previous step
+          prs='${{ steps.find_prs.outputs.prs }}'
+
+          echo "🔍 Checking status of migration-test PRs..."
+
+          # Create temporary files
+          failed_prs_file=$(mktemp)
+
+          # Process each PR
+          echo "$prs" | jq -c '.[]' | while read -r pr; do
+            pr_number=$(echo "$pr" | jq -r '.number')
+            pr_title=$(echo "$pr" | jq -r '.title')
+            pr_url=$(echo "$pr" | jq -r '.url')
+            head_sha=$(echo "$pr" | jq -r '.headRefOid')
+            created_at=$(echo "$pr" | jq -r '.createdAt')
+            updated_at=$(echo "$pr" | jq -r '.updatedAt')
+
+            echo ""
+            echo "🔍 Checking PR #$pr_number: $pr_title"
+
+            # Get PR status using gh CLI
+            pr_status=$(gh pr view "$pr_number" --json statusCheckRollup)
+
+            # Check if there are any failed checks
+            failed_checks=$(echo "$pr_status" | jq -c '.statusCheckRollup[] | select(.conclusion == "FAILURE" or .conclusion == "CANCELLED" or .conclusion == "TIMED_OUT" or .state == "FAILURE" or .state == "ERROR")')
+
+            if [ -n "$failed_checks" ]; then
+              echo "❌ PR #$pr_number has failures"
+
+              # Count total failures and Konflux-related failures
+              total_failures=$(echo "$failed_checks" | jq -s length)
+              konflux_failures=$(echo "$failed_checks" | jq -s '[.[] | select(.name // .context | test("konflux|tekton|pipeline|build"; "i"))]')
+              konflux_failure_count=$(echo "$konflux_failures" | jq length)
+
+              echo "  - Total failures: $total_failures"
+              echo "  - Konflux-related failures: $konflux_failure_count"
+
+              # Store failed PR info for issue creation
+              failed_pr_info=$(jq -n \
+                --arg number "$pr_number" \
+                --arg title "$pr_title" \
+                --arg url "$pr_url" \
+                --arg created_at "$created_at" \
+                --arg updated_at "$updated_at" \
+                --argjson total_failures "$total_failures" \
+                --argjson konflux_failure_count "$konflux_failure_count" \
+                --argjson failures "$failed_checks" \
+                --argjson konflux_failures "$konflux_failures" \
+                '{
+                  number: $number,
+                  title: $title,
+                  url: $url,
+                  created_at: $created_at,
+                  updated_at: $updated_at,
+                  total_failures: $total_failures,
+                  konflux_failure_count: $konflux_failure_count,
+                  failures: $failures,
+                  konflux_failures: $konflux_failures
+                }')
+
+              echo "$failed_pr_info" >> "$failed_prs_file"
+            else
+              echo "✅ PR #$pr_number - All checks passing"
+            fi
+          done
+
+          # Process failed PRs and create/update issues
+          if [ -s "$failed_prs_file" ]; then
+            echo ""
+            echo "📝 Creating/updating issues for failed PRs..."
+
+            while read -r failed_pr; do
+              pr_number=$(echo "$failed_pr" | jq -r '.number')
+              pr_title=$(echo "$failed_pr" | jq -r '.title')
+              pr_url=$(echo "$failed_pr" | jq -r '.url')
+              created_at=$(echo "$failed_pr" | jq -r '.created_at')
+              updated_at=$(echo "$failed_pr" | jq -r '.updated_at')
+              total_failures=$(echo "$failed_pr" | jq -r '.total_failures')
+              konflux_failure_count=$(echo "$failed_pr" | jq -r '.konflux_failure_count')
+
+              issue_title="🚨 Migration Test PR #$pr_number - Check Failures Detected"
+
+              # Check if issue already exists
+              existing_issue=$(gh issue list --state open --label "migration-test-failure" --json number,title | jq -r ".[] | select(.title | contains(\"PR #$pr_number\")) | .number")
+
+              # Generate failure details
+              failure_details=$(echo "$failed_pr" | jq -r '.failures[] | "- **\(.name // .context)** (\(.conclusion // .state)): \(.description // "No description")"')
+              konflux_failure_details=$(echo "$failed_pr" | jq -r '.konflux_failures[]? | "- **\(.name // .context)** (\(.conclusion // .state)): \(.description // "No description")"')
+
+              if [ -n "$existing_issue" ]; then
+                echo "📝 Updating existing issue #$existing_issue for PR #$pr_number"
+
+                # Create temporary file for update comment
+                update_file=$(mktemp)
+                {
+                  echo "## 🔄 Status Update - $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+                  echo ""
+                  echo "**Total Failures**: $total_failures"
+                  echo "**Konflux-related Failures**: $konflux_failure_count"
+                  echo ""
+                  echo "### Current Failures:"
+                  echo "$failure_details"
+
+                  if [ "$konflux_failure_count" -gt 0 ]; then
+                    echo ""
+                    echo "### 🔥 Konflux-specific Failures:"
+                    echo "$konflux_failure_details"
+                  fi
+
+                  echo ""
+                  echo "---"
+                  echo "*Updated by automated migration test monitoring*"
+                } > "$update_file"
+
+                gh issue comment "$existing_issue" --body-file "$update_file"
+                rm -f "$update_file"
+              else
+                echo "🆕 Creating new issue for PR #$pr_number"
+
+                # Create temporary file for new issue
+                issue_file=$(mktemp)
+                {
+                  echo "## 🚨 Migration Test PR Check Failures"
+                  echo ""
+                  echo "**PR**: [#$pr_number $pr_title]($pr_url)"
+                  echo "**Created**: $created_at"
+                  echo "**Last Updated**: $updated_at"
+                  echo "**Check Time**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+                  echo ""
+                  echo "### Summary"
+                  echo "- **Total Failures**: $total_failures"
+                  echo "- **Konflux-related Failures**: $konflux_failure_count"
+                  echo ""
+                  echo "### All Failures"
+                  echo "$failure_details"
+
+                  if [ "$konflux_failure_count" -gt 0 ]; then
+                    echo ""
+                    echo "### 🔥 Konflux-specific Failures"
+                    echo "$konflux_failure_details"
+                  fi
+
+                  echo ""
+                  echo "### Recommended Actions"
+                  echo "1. 🔍 Review the failed checks in the PR"
+                  echo "2. 🛠️ Fix any configuration or code issues"
+                  echo "3. 🔄 Re-run failed checks if needed"
+                  echo "4. ✅ Verify all checks pass before merging"
+                  echo ""
+                  echo "### Auto-monitoring"
+                  echo "This issue is automatically monitored. It will be updated daily with the latest status."
+                  echo ""
+                  echo "---"
+                  echo "*This issue was created by automated migration test monitoring*"
+                } > "$issue_file"
+
+                gh issue create --title "$issue_title" --body-file "$issue_file" --label "migration-test-failure,automated,bug"
+                rm -f "$issue_file"
+              fi
+            done < "$failed_prs_file"
+
+            failed_count=$(wc -l < "$failed_prs_file")
+            echo ""
+            echo "📊 Summary:"
+            echo "- Total migration-test PRs: ${{ steps.find_prs.outputs.count }}"
+            echo "- PRs with failures: $failed_count"
+            echo "- Issues created/updated: $failed_count"
+          else
+            echo "✅ No failed PRs found - all migration-test PRs are passing!"
+          fi
+
+          # Cleanup
+          rm -f "$failed_prs_file"
+
+      - name: Report summary
+        if: always()
+        run: |
+          echo "🏁 Migration test status check completed"
+          echo "📅 Check time: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "🔍 Found ${{ steps.find_prs.outputs.count }} migration-test PRs"
