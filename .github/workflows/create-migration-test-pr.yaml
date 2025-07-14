@@ -1,0 +1,136 @@
+name: Create Migration Test PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_description:
+        description: 'Optional description for the test PR'
+        required: false
+        default: 'Automated migration test'
+
+jobs:
+  create-test-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Generate timestamp and branch name
+        id: timestamp
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          BRANCH_NAME="migration-test-${TIMESTAMP}"
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "formatted_time=$(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_OUTPUT
+
+      - name: Create test branch
+        run: |
+          git checkout -b ${{ steps.timestamp.outputs.branch_name }}
+
+      - name: Create test file to trigger changes
+        run: |
+          mkdir -p .migration-test
+          cat > .migration-test/test-info.md << EOF
+          # Migration Test Information
+
+          **Created**: ${{ steps.timestamp.outputs.formatted_time }}
+          **Branch**: ${{ steps.timestamp.outputs.branch_name }}
+          **Description**: ${{ github.event.inputs.test_description }}
+          **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          This is an automated migration test PR created to validate the current pipeline configuration and Konflux integration.
+
+          ## Test Scope
+          - Pipeline execution validation
+          - Konflux build and test processes
+          - Integration with current configuration
+
+          ## Expected Checks
+          - All Tekton pipeline tasks should complete successfully
+          - Konflux CI/CD checks should pass
+          - No migration warnings or errors should be present
+          EOF
+
+      - name: Commit changes
+        run: |
+          git add .migration-test/
+          git commit -s -m "test: create migration test PR - ${{ steps.timestamp.outputs.formatted_time }}"
+
+      - name: Push test branch
+        run: |
+          git push origin ${{ steps.timestamp.outputs.branch_name }}
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.timestamp.outputs.branch_name }}
+          base: main
+          title: "[MIGRATION-TEST] Test PR - ${{ steps.timestamp.outputs.formatted_time }}"
+          body: |
+            ## 🧪 Migration Test PR
+
+            **Created**: ${{ steps.timestamp.outputs.formatted_time }}
+            **Test Description**: ${{ github.event.inputs.test_description }}
+
+            This is an automated test PR created to validate the current pipeline configuration and Konflux integration.
+
+            ### Test Objectives
+            - ✅ Validate current Tekton pipeline execution
+            - ✅ Test Konflux CI/CD integration
+            - ✅ Verify no migration issues exist
+            - ✅ Ensure all checks pass successfully
+
+            ### Important Notes
+            - This PR is automatically set to **HOLD** status
+            - It contains the `migration-test` label for automated monitoring
+            - Daily checks will monitor the status of this PR
+            - If checks fail, an issue will be automatically created
+
+            ### Manual Actions Required
+            - Review test results when checks complete
+            - Remove hold status if tests pass and you want to merge
+            - Close this PR when testing is complete
+
+            ---
+            *This PR was created by the automated migration test workflow.*
+          labels: |
+            migration-test
+            automated
+            hold
+
+      - name: Add hold comment to PR
+        if: steps.create_pr.outputs.pull-request-number
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          body: |
+            /hold
+
+            🚧 **This PR is automatically placed on HOLD for testing purposes.**
+
+            This migration test PR will be monitored daily for check status. Remove the hold when ready to proceed.
+
+      - name: Output PR information
+        if: steps.create_pr.outputs.pull-request-number
+        run: |
+          echo "✅ Migration test PR created successfully!"
+          echo "📋 PR Number: ${{ steps.create_pr.outputs.pull-request-number }}"
+          echo "🔗 PR URL: ${{ steps.create_pr.outputs.pull-request-url }}"
+          echo "🏷️ Labels: migration-test, automated, hold"
+          echo "⏰ Created: ${{ steps.timestamp.outputs.formatted_time }}"
