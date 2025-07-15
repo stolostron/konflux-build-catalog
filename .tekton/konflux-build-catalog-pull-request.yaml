@@ -35,7 +35,7 @@ spec:
       - name: url
         value: "https://github.com/stolostron/konflux-build-catalog.git"
       - name: revision
-        value: main
+        value: '{{revision}}' # {{revision}} is the commit hash of the PR branch
       - name: pathInRepo
         value: pipelines/common.yaml
   taskRunTemplate:
