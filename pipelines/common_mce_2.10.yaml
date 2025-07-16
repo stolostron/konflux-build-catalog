@@ -75,6 +75,22 @@ spec:
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
       type: array
+    - default: "false"
+      description: Whether to send slack notification when the pipeline run failed
+      name: send-slack-notification
+      type: string
+    - default: "release-mce-210" # Need to change for each release
+      name: konflux-application-name
+      description: The name of the application in Konflux, this is required when send-slack-notification is true
+      type: string
+    - default: ""
+      name: slack-webhook-url-secret-name
+      description: The name of the secret in the namespace which contains the slack webhook url, this is required when send-slack-notification is true
+      type: string
+    - default: "slack-webhook-url"
+      name: slack-webhook-url-secret-key
+      description: The key of the slack webhook url in the secret, this is required when send-slack-notification is true
+      type: string
   results:
     - description: ""
       name: IMAGE_URL
@@ -581,3 +597,34 @@ spec:
           - name: kind
             value: task
         resolver: bundles
+    - name: slack-webhook-notification
+      params:
+        - name: message
+          value: |
+            PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed:
+            - git source: $(params.git-url)/commit/$(params.revision)
+            - target branch: $(params.git-url)/tree/{{target_branch}}
+            - output image: $(params.output-image)
+            - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(params.konflux-application-name)/pipelineruns/$(context.pipelineRun.name)
+        - name: secret-name
+          value: $(params.slack-webhook-url-secret-name)
+        - name: key-name
+          value: $(params.slack-webhook-url-secret-key)
+      taskRef:
+        params:
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1
+        - name: name
+          value: slack-webhook-notification
+        - name: kind
+          value: Task
+        resolver: bundles
+      when:
+        - input: $(tasks.status)
+          operator: in
+          values:
+          - "Failed"
+        - input: $(params.send-slack-notification)
+          operator: in
+          values:
+          - "true"
