@@ -170,27 +170,12 @@ jobs:
 
       - name: Create Pull Request if needed
         if: steps.check_diff.outputs.changed == 'true'
-        run: |
-          # Create a unique branch name with timestamp
-          BRANCH_NAME="tekton-bundle-update-$(date +%Y%m%d-%H%M%S)"
-
-          # Create and switch to new branch
-          git checkout -b "$BRANCH_NAME"
-
-          # Add changed files
-          git add ${{ steps.check_diff.outputs.changed_files }}
-
-          # Commit changes
-          git commit -s -m "${{ steps.check_diff.outputs.commit_message }}"
-
-          # Push branch
-          git push origin "$BRANCH_NAME"
-
-          # Create PR using gh CLI
-          gh pr create \
-            --title "${{ steps.check_diff.outputs.pr_title }}" \
-            --body "${{ steps.check_diff.outputs.pr_body }}" \
-            --base main \
-            --head "$BRANCH_NAME"
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ github.token }}
+          commit-message: ${{ steps.check_diff.outputs.commit_message }}
+          title: ${{ steps.check_diff.outputs.pr_title }}
+          body: ${{ steps.check_diff.outputs.pr_body }}
+          branch: tekton-bundle-update-${{ github.run_number }}-${{ github.run_attempt }}
+          base: main
+          signoff: true
