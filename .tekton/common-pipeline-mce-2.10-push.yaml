@@ -46,7 +46,7 @@ spec:
   - name: slack-member-id
     # Will mention the user in the slack message when the pipeline run failed; this is not required.
     # Please make sure replace the value with component owner's slack member id.
-    value: "U06L36Z3T50"
+    value: "U02CRCBPXK4"
   pipelineRef:
     resolver: git
     params:
