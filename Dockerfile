@@ -2,7 +2,7 @@
 # Minimal Dockerfile to make repository buildable for Konflux
 # This is a basic container that does nothing but allows build processes to complete
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest-non-existing-test
 
 # Set metadata
 LABEL name="konflux-build-catalog" \
