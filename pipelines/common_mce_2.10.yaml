@@ -615,7 +615,6 @@ spec:
           value: |
             :bangbang: <@$(params.slack-member-id)> PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed:
             - git source: $(params.git-url)/commit/$(params.revision)
-            - target branch: $(params.git-url)/tree/{{target_branch}}
             - output image: $(params.output-image)
             - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(params.konflux-application-name)/pipelineruns/$(context.pipelineRun.name)
         - name: secret-name
