@@ -121,6 +121,9 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
+          # Clean up temporary files before checking diff
+          rm -f combined_migration_data.json temp_migration_data.json merged_migration_data.json
+
           # Check if any pipeline files have changes
           PIPELINE_FILES=(
             "pipelines/common.yaml"
