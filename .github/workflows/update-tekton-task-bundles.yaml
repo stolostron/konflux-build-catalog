@@ -8,12 +8,6 @@ on:
 jobs:
   update-tekton-task-bundles:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        pipeline_file:
-          - common.yaml
-          - common_mce_2.10.yaml
-      fail-fast: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,26 +19,63 @@ jobs:
           sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Run update-tekton-task-bundles.sh
+      - name: Run update-tekton-task-bundles.sh for all files
         id: update_bundles
         run: |
-          bash ./update-tekton-task-bundles.sh pipelines/${{ matrix.pipeline_file }} > migration_data.json
+          # Define pipeline files to process
+          PIPELINE_FILES=(
+            "pipelines/common.yaml"
+            "pipelines/common_mce_2.10.yaml"
+          )
+
+          # Initialize combined migration data
+          echo "[]" > combined_migration_data.json
+
+          # Process each file and collect migration data
+          for file in "${PIPELINE_FILES[@]}"; do
+            echo "Processing $file..."
+            if [ -f "$file" ]; then
+              bash ./update-tekton-task-bundles.sh "$file" > temp_migration_data.json
+
+              # Merge migration data if any exists
+              if jq -e 'length > 0' temp_migration_data.json > /dev/null; then
+                jq -s '.[0] + .[1]' combined_migration_data.json temp_migration_data.json > merged_migration_data.json
+                mv merged_migration_data.json combined_migration_data.json
+              fi
+
+              rm -f temp_migration_data.json
+            else
+              echo "Warning: $file not found, skipping..."
+            fi
+          done
+
+          # Output final migration data
+          cat combined_migration_data.json
 
       - name: Check if migration is required
         id: check_migration
         run: |
-          if jq -e 'length > 0' migration_data.json; then
+          if jq -e 'length > 0' combined_migration_data.json; then
             echo "migration_required=true" >> $GITHUB_OUTPUT
 
             # Format migration data for issue body
-            migration_count=$(jq 'length' migration_data.json)
-            migration_details=$(jq -r '.[] | "- **\(.depName)**: \(.currentValue) → \(.newValue)\n  - Link: \(.link)\n  - Package File: \(.packageFile)"' migration_data.json)
+            migration_count=$(jq 'length' combined_migration_data.json)
+            migration_details=$(jq -r '.[] | "- **\(.depName)**: \(.currentValue) → \(.newValue)\n  - Link: \(.link)\n  - Package File: \(.packageFile)"' combined_migration_data.json)
+
+            # Group by package file for better organization
+            files_with_migrations=$(jq -r '.[].packageFile' combined_migration_data.json | sort -u)
 
             # Create issue body with proper formatting and set as output
             echo "issue_body<<EOF" >> $GITHUB_OUTPUT
             echo "## Tekton Task Bundle Migration Required" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
-            echo "The automated Tekton task bundle update process has detected that **${migration_count}** task bundle(s) require migration to newer versions in **${{ matrix.pipeline_file }}**." >> $GITHUB_OUTPUT
+            echo "The automated Tekton task bundle update process has detected that **${migration_count}** task bundle(s) require migration to newer versions across multiple pipeline files." >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Affected Files:" >> $GITHUB_OUTPUT
+            for file in $files_with_migrations; do
+              file_migration_count=$(jq --arg file "$file" '[.[] | select(.packageFile == $file)] | length' combined_migration_data.json)
+              echo "- **$file** (${file_migration_count} migration(s))" >> $GITHUB_OUTPUT
+            done
             echo "" >> $GITHUB_OUTPUT
             echo "### Migration Details:" >> $GITHUB_OUTPUT
             echo -e "$migration_details" >> $GITHUB_OUTPUT
@@ -54,13 +85,13 @@ jobs:
             echo "" >> $GITHUB_OUTPUT
             echo "### Migration Data (JSON):" >> $GITHUB_OUTPUT
             echo '```json' >> $GITHUB_OUTPUT
-            cat migration_data.json | jq . >> $GITHUB_OUTPUT
+            cat combined_migration_data.json | jq . >> $GITHUB_OUTPUT
             echo '```' >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "### Next Steps:" >> $GITHUB_OUTPUT
             echo "1. Review the changes required for each task bundle" >> $GITHUB_OUTPUT
             echo "2. Test the new versions in a development environment" >> $GITHUB_OUTPUT
-            echo "3. Manually update the task bundle references" >> $GITHUB_OUTPUT
+            echo "3. Manually update the task bundle references in the affected files" >> $GITHUB_OUTPUT
             echo "4. Close this issue once migration is complete" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
@@ -69,39 +100,97 @@ jobs:
 
       - name: Create issue for migration
         if: steps.check_migration.outputs.migration_required == 'true'
-        uses: imjohnbo/issue-bot@v3
-        with:
-          token: ${{ github.token }}
-          title: "Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }} - ${{ github.run_id }}"
-          body: ${{ steps.check_migration.outputs.issue_body }}
-          labels: "migration"
-          assignees: ${{ github.actor }}
+        run: |
+          gh issue create \
+            --title "Tekton Task Bundle Migration Required - $(date '+%Y-%m-%d %H:%M:%S UTC')" \
+            --body "${{ steps.check_migration.outputs.issue_body }}" \
+            --label "migration" \
+            --assignee "${{ github.actor }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Fail if migration is required
+        if: steps.check_migration.outputs.migration_required == 'true'
         run: |
-          if jq -e 'length > 0' migration_data.json; then
-            echo "Migration required for ${{ matrix.pipeline_file }}. Please review and migrate before proceeding."
-            cat migration_data.json
-            exit 1
-          fi
+          echo "Migration required for one or more pipeline files. Please review and migrate before proceeding."
+          cat combined_migration_data.json
+          exit 1
 
-      - name: Check if pipeline file changed
+      - name: Check if any pipeline files changed
         id: check_diff
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          if git diff --quiet pipelines/${{ matrix.pipeline_file }}; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
+
+          # Check if any pipeline files have changes
+          PIPELINE_FILES=(
+            "pipelines/common.yaml"
+            "pipelines/common_mce_2.10.yaml"
+          )
+
+          changed_files=()
+          for file in "${PIPELINE_FILES[@]}"; do
+            if [ -f "$file" ] && ! git diff --quiet "$file"; then
+              changed_files+=("$file")
+            fi
+          done
+
+          if [ ${#changed_files[@]} -gt 0 ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed_files=${changed_files[*]}" >> $GITHUB_OUTPUT
+
+            # Create commit message and PR body
+            if [ ${#changed_files[@]} -eq 1 ]; then
+              echo "commit_message=chore: update Tekton Task Bundles in ${changed_files[0]}" >> $GITHUB_OUTPUT
+              echo "pr_title=chore: update Tekton Task Bundles in ${changed_files[0]}" >> $GITHUB_OUTPUT
+            else
+              echo "commit_message=chore: update Tekton Task Bundles in multiple pipeline files" >> $GITHUB_OUTPUT
+              echo "pr_title=chore: update Tekton Task Bundles in multiple pipeline files" >> $GITHUB_OUTPUT
+            fi
+
+            # Create PR body
+            echo "pr_body<<EOF" >> $GITHUB_OUTPUT
+            echo "## Automated Tekton Task Bundle Updates" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "This PR contains automated updates to Tekton Task Bundle references. No migration was required." >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Updated Files:" >> $GITHUB_OUTPUT
+            for file in "${changed_files[@]}"; do
+              echo "- \`$file\`" >> $GITHUB_OUTPUT
+            done
+            echo "" >> $GITHUB_OUTPUT
+            echo "### Changes:" >> $GITHUB_OUTPUT
+            echo "- Updated task bundle digest references to latest versions" >> $GITHUB_OUTPUT
+            echo "- No breaking changes detected" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "This PR was automatically generated by the Tekton Task Bundle update workflow." >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Pull Request if needed
         if: steps.check_diff.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          commit-message: "chore: update Tekton Task Bundles in ${{ matrix.pipeline_file }}"
-          title: "chore: update Tekton Task Bundles in ${{ matrix.pipeline_file }}"
-          body: "Automated PR to update Tekton Task Bundles in ${{ matrix.pipeline_file }}. No migration required."
-          branch: tekton-bundle-update-${{ matrix.pipeline_file }}
-          base: main
-          add-paths: pipelines/${{ matrix.pipeline_file }}
+        run: |
+          # Create a unique branch name with timestamp
+          BRANCH_NAME="tekton-bundle-update-$(date +%Y%m%d-%H%M%S)"
+
+          # Create and switch to new branch
+          git checkout -b "$BRANCH_NAME"
+
+          # Add changed files
+          git add ${{ steps.check_diff.outputs.changed_files }}
+
+          # Commit changes
+          git commit -s -m "${{ steps.check_diff.outputs.commit_message }}"
+
+          # Push branch
+          git push origin "$BRANCH_NAME"
+
+          # Create PR using gh CLI
+          gh pr create \
+            --title "${{ steps.check_diff.outputs.pr_title }}" \
+            --body "${{ steps.check_diff.outputs.pr_body }}" \
+            --base main \
+            --head "$BRANCH_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}
