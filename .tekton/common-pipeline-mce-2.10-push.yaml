@@ -43,6 +43,10 @@ spec:
   - name: slack-webhook-url-secret-key
     # Should be changed according to how the secret slack-webhook-url-secret-name is created.
     value: "slack-webhook-url"
+  - name: slack-member-id
+    # Will mention the user in the slack message when the pipeline run failed; this is not required.
+    # Please make sure replace the value with component owner's slack member id.
+    value: "U06L36Z3T50"
   pipelineRef:
     resolver: git
     params:

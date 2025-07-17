@@ -97,6 +97,12 @@ spec:
         Should be changed according to how the secret slack-webhook-url-secret-name is created.
         See details: https://konflux.pages.redhat.com/docs/users/patterns/slack-notifications.html
       type: string
+    - default: ""
+      name: slack-member-id
+      description: |
+        The member id of the slack user, if this is set will mention the user in the slack message; this id can be found in the slack user profile
+        by clicking the user profile, in the profile pop-up, click the "More" icon(three dots), and then click "Copy member ID" button. e.g. U0600000000
+      type: string
   results:
     - description: ""
       name: IMAGE_URL
@@ -607,7 +613,7 @@ spec:
       params:
         - name: message
           value: |
-            PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed:
+            :bangbang: <@$(params.slack-member-id)> PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed:
             - git source: $(params.git-url)/commit/$(params.revision)
             - target branch: $(params.git-url)/tree/{{target_branch}}
             - output image: $(params.output-image)
