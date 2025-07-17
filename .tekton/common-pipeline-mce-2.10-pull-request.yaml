@@ -15,7 +15,7 @@ metadata:
     appstudio.openshift.io/application: konflux-build-catalog
     appstudio.openshift.io/component: common-pipeline
     pipelines.appstudio.openshift.io/type: build
-  name: common-pipeline-on-pull-request
+  name: common-pipeline-mce-2.10-on-pull-request
   namespace: crt-redhat-acm-tenant
 spec:
   params:
@@ -40,7 +40,7 @@ spec:
       - name: revision
         value: '{{revision}}' # {{revision}} is the commit hash of the PR branch
       - name: pathInRepo
-        value: pipelines/common.yaml
+        value: pipelines/common_mce_2.10.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-common-pipeline
   workspaces:
