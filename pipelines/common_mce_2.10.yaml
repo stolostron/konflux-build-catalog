@@ -83,18 +83,20 @@ spec:
       name: konflux-application-name
       description: The name of the application in Konflux, this is required when send-slack-notification is true
       type: string
-    - default: ""
+    - default: "slack-acm-notify-secret"
       name: slack-webhook-url-secret-name
       description: |
         The name of the secret in the konflux tenant namespace which contains the slack webhook url, this is required when send-slack-notification is true.
         If it does not exist, please prepare the slack webhook url for your team and contact the konflux tenant admins to create it.
+        The default secret is "slack-acm-notify-secret", which will send the slack message to the forum-acm-konflux-pipeline-status channel.
         See details: https://konflux.pages.redhat.com/docs/users/patterns/slack-notifications.html
       type: string
-    - default: "slack-webhook-url"
+    - default: "forum-acm-konflux-pipeline-status-webhook-url"
       name: slack-webhook-url-secret-key
       description: |
         The key of the slack webhook url in the secret, this is required when send-slack-notification is true.
         Should be changed according to how the secret slack-webhook-url-secret-name is created.
+        The default key is "forum-acm-konflux-pipeline-status-webhook-url", which will send the slack message to the forum-acm-konflux-pipeline-status channel.
         See details: https://konflux.pages.redhat.com/docs/users/patterns/slack-notifications.html
       type: string
     - default: ""
