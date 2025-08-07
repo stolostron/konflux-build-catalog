@@ -105,3 +105,5 @@ jobs:
           branch: tekton-bundle-update-${{ matrix.pipeline_file }}
           base: main
           add-paths: pipelines/${{ matrix.pipeline_file }}
+          labels: |
+            automated-update
