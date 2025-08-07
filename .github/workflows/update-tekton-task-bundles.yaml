@@ -13,6 +13,8 @@ jobs:
         pipeline_file:
           - common.yaml
           - common_mce_2.10.yaml
+          - common-fbc.yaml
+          - common-oci-ta.yaml
       fail-fast: false
     steps:
       - name: Checkout repository
