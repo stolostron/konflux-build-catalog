@@ -12,12 +12,23 @@ In Tekton, we can use PipelineRef to refer to another Pipeline in a PipelineRun.
 
 Konflux will only update the digest references in this konflux-build-catalog repository. This can reduce the number of PRs from 50+ to 1 PR every day. As more repositories adopt this common pipeline, the greater the efficiency improvement this approach can deliver.
 
+## Pipelines
+
+This repository contains the following pipelines:
+- `pipelines/common.yaml`: The main common build pipeline for multi-platform container images. It aligns with [docker-build-multi-platform-oci-ta pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/docker-build-multi-platform-oci-ta) and is used by most repositories.
+
+- `pipelines/common-oci-ta.yaml`: A common pipeline for single-platform container image. It aligns with [docker-build-oci-ta pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/docker-build-oci-ta) and is used by bundle repositories that do not require multi-platform builds, such as `multicluster-global-hub-operator-bundle`.
+
+- `pipelines/common-fbc.yaml`: A common pipeline for FBC (File-Based Catalogs) builds. It aligns with [fbc-builder pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/fbc-builder) and is used by repositories that build FBCs, such as `multicluster-global-hub-operator-catalog`.
+
 ## Project Structure
 
 ```
 .
 ├── pipelines/
-│   ├── common.yaml              # Main common build pipeline
+│   ├── common.yaml              # Main common build pipeline to a multi-platform container image
+│   ├── common-fbc.yaml          # Main common build pipeline to a file-based catalogs image
+│   ├── common-oci-ta.yaml       # Main common build pipeline to a single-platform container image
 │   └── common_mce_2.10.yaml     # Common pipeline for MCE 2.10
 ├── .tekton/                     # Konflux configuration for this project
 ├── .github/workflows/

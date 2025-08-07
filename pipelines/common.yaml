@@ -71,7 +71,7 @@ spec:
       name: build-platforms
       type: array
     - default: "false"
-      description: Use dev package managers
+      description: Enable in-development package managers, such as pre-fetch rpm packages defined in RPM lockfiles.
       name: use-dev-package-managers
       type: string
   results:
