@@ -1,0 +1,25 @@
+# CODEOWNERS file for granular ownership of .tekton files
+# This file defines who needs to review changes to specific files or directories
+
+# Default owners for the entire repository
+* @zhujian7 @xuezhaojun
+
+# Specific ownership for .tekton pipeline files
+# Each file can be assigned to different maintainers for specialized review
+
+.tekton/common-pipeline-pull-request.yaml @xuezhaojun
+.tekton/common-pipeline-push.yaml @xuezhaojun
+.tekton/common-pipeline-mce-2.10-pull-request.yaml @zhujian7
+.tekton/common-pipeline-mce-2.10-push.yaml @zhujian7
+.tekton/common-pipeline-oci-ta-pull-request.yaml @clyang82
+.tekton/common-pipeline-fbc-pull-request.yaml @clyang82
+
+# Pipeline source files
+pipelines/common.yaml @xuezhaojun
+pipelines/common_mce_2.10.yaml @zhujian7
+pipelines/common-oci-ta.yaml @clyang82
+pipelines/common-fbc.yaml @clyang82
+
+# Automation scripts
+update-tekton-task-bundles.sh @xuezhaojun
+.github/workflows/ @xuezhaojun
