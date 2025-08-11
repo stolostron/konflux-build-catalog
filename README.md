@@ -15,6 +15,33 @@ This repository contains the following pipelines:
 
 - `pipelines/common-fbc.yaml`: A common pipeline for FBC (File-Based Catalogs) builds. It aligns with [fbc-builder pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/fbc-builder) and is used by repositories that build FBCs, such as `multicluster-global-hub-operator-catalog`.
 
+### MCE (Multicluster Engine) Specific Pipelines
+- `pipelines/common_mce_2.10.yaml`: Common pipeline for MCE 2.10 (`release-mce-210`)
+- `pipelines/common_mce_2.9.yaml`: Common pipeline for MCE 2.9 (`release-mce-29`)
+- `pipelines/common_mce_2.8.yaml`: Common pipeline for MCE 2.8 (`release-mce-28`)
+- `pipelines/common_mce_2.7.yaml`: Common pipeline for MCE 2.7 (`release-mce-27`)
+- `pipelines/common_mce_2.6.yaml`: Common pipeline for MCE 2.6 (`release-mce-26`)
+
+All MCE pipelines are identical to the main common pipeline but with version-specific `konflux-application-name` parameters for proper Slack notifications and application identification.
+
+## Pipeline Selection Guide
+
+Choose the appropriate pipeline based on your project requirements:
+
+### For General Projects
+- **Multi-platform builds**: Use `pipelines/common.yaml`
+- **Single-platform bundles**: Use `pipelines/common-oci-ta.yaml`
+- **File-Based Catalogs**: Use `pipelines/common-fbc.yaml`
+
+### For MCE (Multicluster Engine) Projects
+- **MCE 2.10**: Use `pipelines/common_mce_2.10.yaml`
+- **MCE 2.9**: Use `pipelines/common_mce_2.9.yaml`
+- **MCE 2.8**: Use `pipelines/common_mce_2.8.yaml`
+- **MCE 2.7**: Use `pipelines/common_mce_2.7.yaml`
+- **MCE 2.6**: Use `pipelines/common_mce_2.6.yaml`
+
+The MCE-specific pipelines ensure proper application identification and Slack notifications for each MCE release stream.
+
 ## Project Structure
 
 ```
@@ -23,9 +50,15 @@ This repository contains the following pipelines:
 │   ├── common.yaml              # Main common build pipeline to a multi-platform container image
 │   ├── common-fbc.yaml          # Main common build pipeline to a file-based catalogs image
 │   ├── common-oci-ta.yaml       # Main common build pipeline to a single-platform container image
-│   └── common_mce_2.10.yaml     # Common pipeline for MCE 2.10
+│   ├── common_mce_2.10.yaml     # Common pipeline for MCE 2.10
+│   ├── common_mce_2.9.yaml      # Common pipeline for MCE 2.9
+│   ├── common_mce_2.8.yaml      # Common pipeline for MCE 2.8
+│   ├── common_mce_2.7.yaml      # Common pipeline for MCE 2.7
+│   └── common_mce_2.6.yaml      # Common pipeline for MCE 2.6
 ├── v4.13/*                       # FBC build files for OpenShift 4.13
 ├── .tekton/                     # Konflux configuration for this project
+│   ├── common-pipeline-*-pull-request.yaml  # PR configurations for all pipelines
+│   └── common-pipeline-*-push.yaml          # Push configurations for all pipelines
 ├── .github/workflows/
 │   └── update-tekton-task-bundles.yaml    # Workflow to auto-update task bundles
 │   └── auto-merge-automated-updates.yaml  # Workflow to auto-merge automated updates
@@ -62,7 +95,7 @@ This project includes two complementary GitHub Actions workflows for fully autom
 ### Update Workflow (`.github/workflows/update-tekton-task-bundles.yaml`)
 Runs daily at 02:00 UTC and:
 1. Automatically checks for the latest versions of Tekton task bundles
-2. Updates task references in `pipelines/common.yaml` and `pipelines/common_mce_2.10.yaml`
+2. Updates task references in all pipeline files (`common.yaml`, `common_mce_*.yaml`, `common-fbc.yaml`, `common-oci-ta.yaml`)
 3. Creates a PR with the `automated-update` label if there are updates
 
 ### Auto-merge Workflow (`.github/workflows/auto-merge-automated-updates.yaml`)
@@ -87,7 +120,7 @@ pipelineRef:
     - name: revision
       value: main
     - name: pathInRepo
-      value: pipelines/common.yaml # or pipelines/common_mce_2.10.yaml for MCE 2.10 branches
+      value: pipelines/common.yaml # or pipelines/common_mce_X.Y.yaml for MCE X.Y branches
 ```
 
 Follow this PR to understand how to update your repository: https://github.com/stolostron/managedcluster-import-controller/pull/730
