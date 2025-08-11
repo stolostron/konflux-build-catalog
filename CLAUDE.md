@@ -9,10 +9,21 @@ This is a **Konflux Build Catalog** repository that contains Tekton pipeline def
 ## Key Components
 
 ### Pipeline Files
-- `pipelines/common.yaml` - Main multi-arch build pipeline with full security scanning
-- `pipelines/common_mce_2.10.yaml` - MCE 2.10 specific variant with identical structure but potentially different defaults
+The `pipelines/` directory contains standardized Tekton pipeline definitions for different build scenarios and MCE (Multicluster Engine) versions:
+
+**Core Pipelines:**
+- `pipelines/common.yaml` - Main multi-arch build pipeline with comprehensive security scanning
 - `pipelines/common-oci-ta.yaml` - Single-platform container build pipeline for bundle repositories
 - `pipelines/common-fbc.yaml` - File-Based Catalogs (FBC) build pipeline
+
+**MCE Version-Specific Pipelines:**
+- `pipelines/common_mce_2.6.yaml` - MCE 2.6 compatibility variant
+- `pipelines/common_mce_2.7.yaml` - MCE 2.7 compatibility variant
+- `pipelines/common_mce_2.8.yaml` - MCE 2.8 compatibility variant
+- `pipelines/common_mce_2.9.yaml` - MCE 2.9 compatibility variant
+- `pipelines/common_mce_2.10.yaml` - MCE 2.10 compatibility variant
+
+All MCE-specific pipelines maintain identical structure to the main pipeline but may have different defaults and version-specific configurations optimized for their respective MCE releases.
 
 ### Automation
 - `update-tekton-task-bundles.sh` - Updates Tekton task bundle references to latest versions
@@ -117,7 +128,7 @@ Example CEL expression patterns:
 # For pipelines/common.yaml
 pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main" && ("pipelines/common.yaml".pathChanged() || ".tekton/common-pipeline-pull-request.yaml".pathChanged())
 
-# For pipelines/common-fbc.yaml  
+# For pipelines/common-fbc.yaml
 pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main" && ("pipelines/common-fbc.yaml".pathChanged() || ".tekton/common-pipeline-fbc-pull-request.yaml".pathChanged())
 ```
 
@@ -135,12 +146,12 @@ pipelineRef:
     - name: revision
       value: main
     - name: pathInRepo
-      value: pipelines/common.yaml  # or common_mce_2.10.yaml, common-oci-ta.yaml, common-fbc.yaml
+      value: pipelines/common.yaml  # or common_mce_X.Y.yaml, common-oci-ta.yaml, common-fbc.yaml
 ```
 
 ### Pipeline Selection Guide
 - **Multi-platform builds**: Use `pipelines/common.yaml`
-- **MCE 2.10 compatibility**: Use `pipelines/common_mce_2.10.yaml`
+- **MCE version-specific builds**: Use corresponding `pipelines/common_mce_X.Y.yaml` (versions 2.6, 2.7, 2.8, 2.9, 2.10)
 - **Single-platform bundles**: Use `pipelines/common-oci-ta.yaml`
 - **File-Based Catalogs**: Use `pipelines/common-fbc.yaml`
 
@@ -150,3 +161,7 @@ pipelineRef:
 - **OCI Artifacts** - Trusted artifact storage
 - **Multi-Platform Controller** - Cross-platform builds
 - **Security Scanning** - Clair, Snyk, Coverity integration
+
+## Playbook
+
+* How to handle a migration issue: @playbook/how-to-handle-a-migration-issue.md
