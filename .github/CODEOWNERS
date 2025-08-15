@@ -2,7 +2,7 @@
 # This file defines who needs to review changes to specific files or directories
 
 # Default owners for the entire repository
-* @zhujian7 @xuezhaojun
+* @zhujian7 @xuezhaojun @jnpacker
 
 # Specific ownership for .tekton pipeline files
 # Each file can be assigned to different maintainers for specialized review
