@@ -5,6 +5,8 @@ ENTRYPOINT ["/bin/opm"]
 CMD ["serve", "/configs", "--cache-dir=/tmp/cache"]
 
 COPY catalog/ /configs
+RUN cat /configs/multicluster-global-hub-operator-rh/catalog-current.json >> /configs/multicluster-global-hub-operator-rh/catalog.json
+RUN rm -f /configs/multicluster-global-hub-operator-rh/catalog-current.json
 
 RUN ["/bin/opm", "serve", "/configs", "--cache-dir=/tmp/cache", "--cache-only"]
 
