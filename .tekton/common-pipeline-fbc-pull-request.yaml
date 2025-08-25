@@ -34,6 +34,14 @@ spec:
   - name: build-platforms
     value:
     - linux/x86_64
+  - name: opm-args
+    value:
+      - alpha
+      - render-template
+      - basic
+      - "v4.13/catalog-template.json"
+  - name: opm-output-path
+    value: "v4.13/catalog/multicluster-global-hub-operator-rh/catalog-current.json"
   pipelineRef:
     resolver: git
     params:
