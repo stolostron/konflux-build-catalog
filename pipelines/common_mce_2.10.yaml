@@ -109,6 +109,10 @@ spec:
         The member id of the slack user, if this is set will mention the user in the slack message; this id can be found in the slack user profile
         by clicking the user profile, in the profile pop-up, click the "More" icon(three dots), and then click "Copy member ID" button. e.g. U0600000000
       type: string
+    - default: "v2.10.0"
+      description: The version of the MCE
+      name: mce-version
+      type: string
   results:
     - description: ""
       name: IMAGE_URL
@@ -226,6 +230,7 @@ spec:
         - name: BUILD_ARGS
           value:
             - $(params.build-args[*])
+            - MCE_VERSION=$(params.mce-version)
         - name: BUILD_ARGS_FILE
           value: $(params.build-args-file)
         - name: PRIVILEGED_NESTED
