@@ -75,6 +75,10 @@ spec:
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
       type: array
+    - default: 'true'
+      description: Check symlinks in the repo. If they're pointing outside of the repo, the build will fail.
+      name: enable-symlink-check
+      type: string
     - default: "false"
       description: Whether to send slack notification when the pipeline run failed
       name: send-slack-notification
@@ -151,6 +155,8 @@ spec:
           value: $(params.output-image).git
         - name: ociArtifactExpiresAfter
           value: $(params.image-expires-after)
+        - name: enableSymlinkCheck
+          value: $(params.enable-symlink-check)
       runAfter:
         - init
       taskRef:

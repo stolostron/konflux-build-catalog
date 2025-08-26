@@ -78,6 +78,10 @@ spec:
     - default: "false"
       description: Enable in-development package managers, such as pre-fetch rpm packages defined in RPM lockfiles.
       name: use-dev-package-managers
+    - default: 'true'
+      description: Check symlinks in the repo. If they're pointing outside of the repo, the build will fail.
+      name: enable-symlink-check
+      type: string
     - default: "false"
       description: Whether to send slack notification when the pipeline run failed
       name: send-slack-notification
@@ -154,6 +158,8 @@ spec:
           value: $(params.output-image).git
         - name: ociArtifactExpiresAfter
           value: $(params.image-expires-after)
+        - name: enableSymlinkCheck
+          value: $(params.enable-symlink-check)
       runAfter:
         - init
       taskRef:
