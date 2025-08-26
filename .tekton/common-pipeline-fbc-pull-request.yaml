@@ -41,7 +41,9 @@ spec:
       - basic
       - "v4.13/catalog-template.json"
   - name: opm-output-path
-    value: "v4.13/catalog/multicluster-global-hub-operator-rh/catalog-current.json"
+    value: v4.13/catalog/multicluster-global-hub-operator-rh/catalog-current.json
+  - name: idms-path
+    value: .tekton/images-mirror-set.yaml
   pipelineRef:
     resolver: git
     params:
