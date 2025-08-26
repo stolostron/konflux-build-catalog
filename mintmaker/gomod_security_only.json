@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>stolostron/konflux-build-catalog//mintmaker/default"],
+  "gomod": {
+    "packageRules": [
+      {
+        "matchDepTypes": ["indirect"],
+        "enabled": false
+      }
+    ]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "enabled": false,
+      "vulnerabilityAlerts": {
+        "enabled": true
+      },
+      "osvVulnerabilityAlerts": true
+    }
+  ]
+}

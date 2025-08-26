@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "dockerfile": {
+    "managerFilePatterns": ["Dockerfile.rhtap"],
+    "pinDigests": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true
+}
