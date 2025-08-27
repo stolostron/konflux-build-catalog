@@ -14,7 +14,7 @@
         },
         {
             "schema": "olm.bundle",
-            "image": "registry.redhat.io/multicluster-globalhub/multicluster-globalhub-operator-bundle@sha256:bee3b9ef0691eb0fe21f330a5f929fa470e13913f3f3f865993a795961c03546"
+            "image": "quay.io/redhat-user-workloads/acm-multicluster-glo-tenant/multicluster-global-hub-operator-bundle-globalhub-1-5@sha256:bee3b9ef0691eb0fe21f330a5f929fa470e13913f3f3f865993a795961c03546"
         }
     ]
 }
