@@ -2,7 +2,7 @@
 # This file defines who needs to review changes to specific files or directories
 
 # Default owners for the entire repository
-* @zhujian7 @xuezhaojun @jnpacker
+* @zhujian7 @xuezhaojun @jnpacker @dhaiducek
 
 # Specific ownership for .tekton pipeline files
 # Each file can be assigned to different maintainers for specialized review
@@ -22,3 +22,6 @@ pipelines/common-fbc.yaml @clyang82
 # Automation scripts
 update-tekton-task-bundles.sh @xuezhaojun
 .github/workflows/ @xuezhaojun
+
+# Mintmaker
+mintmaker/ @dhaiducek
