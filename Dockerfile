@@ -15,6 +15,10 @@ LABEL \
       io.openshift.tags="data,images" \
       version="1.0.0"
 
+ARG MCE_VERSION
+ENV SOURCE_GIT_TAG=${MCE_VERSION}
+RUN echo "SOURCE_GIT_TAG=${SOURCE_GIT_TAG}"
+
 # Copy pipeline files to demonstrate this is a pipeline catalog
 COPY pipelines/ /pipelines/
 COPY .tekton/ /.tekton/
