@@ -86,10 +86,12 @@ spec:
       set of values is determined by the configuration of the multi-platform-controller.
     name: build-platforms
     type: array
-  - description: An array of arguments passed to opm when executed.
+  - default: []
+    description: An array of arguments passed to opm when executed.
     name: opm-args
     type: array
-  - description: The path where the output from opm will be stored (i.e., where catalog.json will be saved).
+  - default: ""
+    description: The path where the output from opm will be stored (i.e., where catalog.json will be saved).
     name: opm-output-path
     type: string
   - default: ""
