@@ -19,6 +19,10 @@ spec:
     - description: Fully Qualified Output Image
       name: output-image
       type: string
+    - default: []
+      description: Additional tags to add to the image
+      name: additional-tags
+      type: array
     - default: .
       description: Path to the source code of an application's component from where to build image.
       name: path-context
@@ -557,6 +561,8 @@ spec:
           value: $(tasks.build-image-index.results.IMAGE_URL)
         - name: IMAGE_DIGEST
           value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        - name: ADDITIONAL_TAGS
+          value: $(params.additional-tags[*])
       runAfter:
         - build-image-index
       taskRef:
