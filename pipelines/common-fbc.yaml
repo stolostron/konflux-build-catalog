@@ -184,7 +184,7 @@ spec:
         - name: name
           value: run-opm-command-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-run-opm-command-oci-ta:0.1@sha256:6b2b9c51df83db7861870feceb30108e99ea84c837f214e52cbaecc56214259d
+          value: quay.io/konflux-ci/tekton-catalog/task-run-opm-command-oci-ta:0.1@sha256:6202ce43ff90e3d0ece6544bbe972c3284c9c5c6675da4e34176b929285c4081
         - name: kind
           value: task
       resolver: bundles
@@ -253,7 +253,7 @@ spec:
       - name: name
         value: buildah-remote-oci-ta
       - name: bundle
-        value: quay.io/konflux-ci/tekton-catalog/task-buildah-remote-oci-ta:0.5@sha256:312a42ce2fe4b59fb9bdd5ee227e05fdff22a2346bc3c9c0ec62d2b0214a2788
+        value: quay.io/konflux-ci/tekton-catalog/task-buildah-remote-oci-ta:0.5@sha256:ec87447b59e05ca85b7ae33b01cfc585b34aacf95b4fed5e705e4f5a65eee141
       - name: kind
         value: task
       resolver: bundles
