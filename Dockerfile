@@ -22,6 +22,8 @@ RUN echo "SOURCE_GIT_TAG=${SOURCE_GIT_TAG}"
 # Copy pipeline files to demonstrate this is a pipeline catalog
 COPY pipelines/ /pipelines/
 COPY .tekton/ /.tekton/
+RUN mkdir licenses/
+COPY LICENSE licenses/
 
 # Use existing user from base image (no network dependencies)
 USER 1001
@@ -31,3 +33,6 @@ WORKDIR /pipelines
 
 # Default command that does nothing but keeps container running if needed
 CMD ["sleep", "infinity"]
+
+LABEL cpe=""
+LABEL org.opencontainers.image.created=""
