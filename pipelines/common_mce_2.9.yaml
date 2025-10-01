@@ -116,6 +116,10 @@ spec:
     - default: "v2.9.1"
       name: mce-version
       description: The version of the MCE
+    - name: buildah-format
+      default: docker
+      type: string
+      description: The format for the resulting image's mediaType. Valid values are oci or docker.
   results:
     - description: ""
       name: IMAGE_URL
@@ -244,6 +248,8 @@ spec:
           value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
         - name: IMAGE_APPEND_PLATFORM
           value: "true"
+        - name: BUILDAH_FORMAT
+          value: $(params.buildah-format)
       runAfter:
         - prefetch-dependencies
       taskRef:
@@ -273,6 +279,8 @@ spec:
         - name: IMAGES
           value:
             - $(tasks.build-images.results.IMAGE_REF[*])
+        - name: BUILDAH_FORMAT
+          value: $(params.buildah-format)
       runAfter:
         - build-images
       taskRef:
@@ -343,9 +351,9 @@ spec:
             - "false"
     - matrix:
         params:
-        - name: image-platform
-          value:
-          - $(params.build-platforms)
+          - name: image-platform
+            value:
+              - $(params.build-platforms)
       name: clair-scan
       params:
         - name: image-digest
@@ -646,19 +654,19 @@ spec:
           value: $(params.slack-webhook-url-secret-key)
       taskRef:
         params:
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1@sha256:4e68fe2225debc256d403b828ed358345bb56d03327b46d55cb6c42911375750
-        - name: name
-          value: slack-webhook-notification
-        - name: kind
-          value: Task
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1@sha256:4e68fe2225debc256d403b828ed358345bb56d03327b46d55cb6c42911375750
+          - name: name
+            value: slack-webhook-notification
+          - name: kind
+            value: Task
         resolver: bundles
       when:
         - input: $(tasks.status)
           operator: in
           values:
-          - "Failed"
+            - "Failed"
         - input: $(params.send-slack-notification)
           operator: in
           values:
-          - "true"
+            - "true"
