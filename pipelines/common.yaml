@@ -113,8 +113,19 @@ spec:
     - default: ""
       name: slack-member-id
       description: |
-        The member id of the slack user, if this is set will mention the user in the slack message; this id can be found in the slack user profile
-        by clicking the user profile, in the profile pop-up, click the "More" icon(three dots), and then click "Copy member ID" button. e.g. U0600000000
+        The member id of the slack user to mention in the slack message when the pipeline fails.
+        To find this ID: Click the user's profile → Click "More" (three dots) → Click "Copy member ID"
+        Example: U0600000000
+        Usage: Leave empty to not mention any specific user. If both slack-member-id and slack-group-id are provided, both will be mentioned.
+      type: string
+    - default: ""
+      name: slack-group-id
+      description: |
+        The user group ID to mention in the slack message when the pipeline fails.
+        To find this ID: Go to "People & user groups" → Select the user group → Click "More" (three dots) → Click "Copy group ID"
+        Example: S0600000000
+        Usage: Leave empty to not mention any user group. If both slack-member-id and slack-group-id are provided, both will be mentioned.
+        Note: This is for user groups (collections of users), not channels. User group mentions use the format <!subteam^GROUP_ID>.
       type: string
     - name: buildah-format
       default: docker
@@ -641,11 +652,11 @@ spec:
           - name: kind
             value: task
         resolver: bundles
-    - name: slack-webhook-notification
+    - name: slack-webhook-notification-with-member
       params:
         - name: message
           value: |
-            :bangbang: <@$(params.slack-member-id)> PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed:
+            :bangbang: <@$(params.slack-member-id)> PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed
             - git source: $(params.git-url)/commit/$(params.revision)
             - output image: $(params.output-image)
             - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(params.konflux-application-name)/pipelineruns/$(context.pipelineRun.name)
@@ -671,3 +682,87 @@ spec:
           operator: in
           values:
             - "true"
+        - input: $(params.slack-member-id)
+          operator: notin
+          values:
+            - ""
+        - input: $(params.slack-group-id)
+          operator: in
+          values:
+            - ""
+    - name: slack-webhook-notification-with-group
+      params:
+        - name: message
+          value: |
+            :bangbang: <!subteam^$(params.slack-group-id)> PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed
+            - git source: $(params.git-url)/commit/$(params.revision)
+            - output image: $(params.output-image)
+            - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(params.konflux-application-name)/pipelineruns/$(context.pipelineRun.name)
+        - name: secret-name
+          value: $(params.slack-webhook-url-secret-name)
+        - name: key-name
+          value: $(params.slack-webhook-url-secret-key)
+      taskRef:
+        params:
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1@sha256:4e68fe2225debc256d403b828ed358345bb56d03327b46d55cb6c42911375750
+          - name: name
+            value: slack-webhook-notification
+          - name: kind
+            value: Task
+        resolver: bundles
+      when:
+        - input: $(tasks.status)
+          operator: in
+          values:
+            - "Failed"
+        - input: $(params.send-slack-notification)
+          operator: in
+          values:
+            - "true"
+        - input: $(params.slack-member-id)
+          operator: in
+          values:
+            - ""
+        - input: $(params.slack-group-id)
+          operator: notin
+          values:
+            - ""
+    - name: slack-webhook-notification-no-mentions
+      params:
+        - name: message
+          value: |
+            :bangbang: PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed
+            - git source: $(params.git-url)/commit/$(params.revision)
+            - output image: $(params.output-image)
+            - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(params.konflux-application-name)/pipelineruns/$(context.pipelineRun.name)
+        - name: secret-name
+          value: $(params.slack-webhook-url-secret-name)
+        - name: key-name
+          value: $(params.slack-webhook-url-secret-key)
+      taskRef:
+        params:
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1@sha256:4e68fe2225debc256d403b828ed358345bb56d03327b46d55cb6c42911375750
+          - name: name
+            value: slack-webhook-notification
+          - name: kind
+            value: Task
+        resolver: bundles
+      when:
+        - input: $(tasks.status)
+          operator: in
+          values:
+            - "Failed"
+        - input: $(params.send-slack-notification)
+          operator: in
+          values:
+            - "true"
+        - input: $(params.slack-member-id)
+          operator: in
+          values:
+            - ""
+        - input: $(params.slack-group-id)
+          operator: in
+          values:
+            - ""
