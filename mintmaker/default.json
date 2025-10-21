@@ -1,8 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "schedule": "weekly",
   "dockerfile": {
-    "managerFilePatterns": ["Dockerfile.rhtap"],
-    "pinDigests": true
+    "enabled": false
   },
   "vulnerabilityAlerts": {
     "enabled": true

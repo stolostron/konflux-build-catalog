@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>stolostron/konflux-build-catalog//mintmaker/default"],
+  "dockerfile": {
+    "enabled": true,
+    "managerFilePatterns": ["Dockerfile.rhtap"],
+    "pinDigests": true
+  }
+}

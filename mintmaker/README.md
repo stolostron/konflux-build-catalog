@@ -9,4 +9,5 @@ to extend your configuration (without the `.json` extension):
 ```
 
 Documentation:
+
 - [Renovate Presets](https://docs.renovatebot.com/config-presets/#github-hosted-presets)
