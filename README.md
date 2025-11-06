@@ -37,6 +37,7 @@ Choose the appropriate pipeline based on your project requirements:
 
 ### For MCE (Multicluster Engine) Projects
 
+- __MCE 2.11__: Use `pipelines/common_mce_2.11.yaml`
 - __MCE 2.10__: Use `pipelines/common_mce_2.10.yaml`
 - __MCE 2.9__: Use `pipelines/common_mce_2.9.yaml`
 - __MCE 2.8__: Use `pipelines/common_mce_2.8.yaml`
@@ -53,6 +54,7 @@ The MCE-specific pipelines ensure proper application identification and Slack no
 │   ├── common.yaml              # Main common build pipeline to a multi-platform container image
 │   ├── common-fbc.yaml          # Main common build pipeline to a file-based catalogs image
 │   ├── common-oci-ta.yaml       # Main common build pipeline to a single-platform container image
+│   ├── common_mce_2.11.yaml     # Common pipeline for MCE 2.11
 │   ├── common_mce_2.10.yaml     # Common pipeline for MCE 2.10
 │   ├── common_mce_2.9.yaml      # Common pipeline for MCE 2.9
 │   ├── common_mce_2.8.yaml      # Common pipeline for MCE 2.8
