@@ -9,13 +9,14 @@ Since the PipelineSpec of each PipelineRun in Tekton files across repositories i
 ## Pipelines
 
 This repository contains the following pipelines:
+
 - `pipelines/common.yaml`: The main common build pipeline for multi-platform container images. It aligns with [docker-build-multi-platform-oci-ta pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/docker-build-multi-platform-oci-ta) and is used by most repositories.
-
 - `pipelines/common-oci-ta.yaml`: A common pipeline for single-platform container image. It aligns with [docker-build-oci-ta pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/docker-build-oci-ta) and is used by bundle repositories that do not require multi-platform builds, such as `multicluster-global-hub-operator-bundle`.
-
 - `pipelines/common-fbc.yaml`: A common pipeline for FBC (File-Based Catalogs) builds. It aligns with [fbc-builder pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/fbc-builder) and is used by repositories that build FBCs, such as `multicluster-global-hub-operator-catalog`.
 
 ### MCE (Multicluster Engine) Specific Pipelines
+
+- `pipelines/common_mce_2.11.yaml`: Common pipeline for MCE 2.11 (`release-mce-211`)
 - `pipelines/common_mce_2.10.yaml`: Common pipeline for MCE 2.10 (`release-mce-210`)
 - `pipelines/common_mce_2.9.yaml`: Common pipeline for MCE 2.9 (`release-mce-29`)
 - `pipelines/common_mce_2.8.yaml`: Common pipeline for MCE 2.8 (`release-mce-28`)
@@ -29,22 +30,24 @@ All MCE pipelines are identical to the main common pipeline but with version-spe
 Choose the appropriate pipeline based on your project requirements:
 
 ### For General Projects
+
 - **Multi-platform builds**: Use `pipelines/common.yaml`
 - **Single-platform bundles**: Use `pipelines/common-oci-ta.yaml`
 - **File-Based Catalogs**: Use `pipelines/common-fbc.yaml`
 
 ### For MCE (Multicluster Engine) Projects
-- **MCE 2.10**: Use `pipelines/common_mce_2.10.yaml`
-- **MCE 2.9**: Use `pipelines/common_mce_2.9.yaml`
-- **MCE 2.8**: Use `pipelines/common_mce_2.8.yaml`
-- **MCE 2.7**: Use `pipelines/common_mce_2.7.yaml`
-- **MCE 2.6**: Use `pipelines/common_mce_2.6.yaml`
+
+- __MCE 2.10__: Use `pipelines/common_mce_2.10.yaml`
+- __MCE 2.9__: Use `pipelines/common_mce_2.9.yaml`
+- __MCE 2.8__: Use `pipelines/common_mce_2.8.yaml`
+- __MCE 2.7__: Use `pipelines/common_mce_2.7.yaml`
+- __MCE 2.6__: Use `pipelines/common_mce_2.6.yaml`
 
 The MCE-specific pipelines ensure proper application identification and Slack notifications for each MCE release stream.
 
 ## Project Structure
 
-```
+```ini
 .
 ├── pipelines/
 │   ├── common.yaml              # Main common build pipeline to a multi-platform container image
@@ -93,13 +96,17 @@ pipelineRef:
 This project includes two complementary GitHub Actions workflows for fully automated updates:
 
 ### Update Workflow (`.github/workflows/update-tekton-task-bundles.yaml`)
+
 Runs daily at 02:00 UTC and:
+
 1. Automatically checks for the latest versions of Tekton task bundles
 2. Updates task references in all pipeline files (`common.yaml`, `common_mce_*.yaml`, `common-fbc.yaml`, `common-oci-ta.yaml`)
 3. Creates a PR with the `automated-update` label if there are updates
 
 ### Auto-merge Workflow (`.github/workflows/auto-merge-automated-updates.yaml`)
+
 Runs daily at 04:00 UTC (2 hours after the update workflow) and:
+
 1. Identifies PRs with the `automated-update` label
 2. Verifies that all status checks are passing and the PR is mergeable
 3. Automatically merges qualifying PRs using squash merge
