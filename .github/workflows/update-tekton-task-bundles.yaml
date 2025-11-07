@@ -12,6 +12,7 @@ jobs:
       matrix:
         pipeline_file:
           - common.yaml
+          - common_mce_2.11.yaml
           - common_mce_2.10.yaml
           - common_mce_2.9.yaml
           - common_mce_2.8.yaml
