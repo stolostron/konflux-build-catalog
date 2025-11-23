@@ -74,29 +74,63 @@ jobs:
             echo "migration_required=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create issue for migration
+      - name: Extract pipeline filename without extension
         if: steps.check_migration.outputs.migration_required == 'true'
+        id: extract_filename
+        run: |
+          filename="${{ matrix.pipeline_file }}"
+          filename_no_ext="${filename%.yaml}"
+          echo "filename_label=${filename_no_ext}" >> $GITHUB_OUTPUT
+
+      - name: Check for existing migration issue
+        if: steps.check_migration.outputs.migration_required == 'true'
+        id: check_existing_issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          filename_label="${{ steps.extract_filename.outputs.filename_label }}"
+
+          # Search for open issues with both migration and filename labels
+          existing_issues=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --label "migration,${filename_label}" \
+            --json number \
+            --jq 'length')
+
+          if [ "$existing_issues" -gt 0 ]; then
+            echo "issue_exists=true" >> $GITHUB_OUTPUT
+            echo "Found $existing_issues existing migration issue(s) for ${filename_label}"
+          else
+            echo "issue_exists=false" >> $GITHUB_OUTPUT
+            echo "No existing migration issue found for ${filename_label}"
+          fi
+
+      - name: Create issue for migration
+        if: steps.check_migration.outputs.migration_required == 'true' && steps.check_existing_issue.outputs.issue_exists == 'false'
         uses: imjohnbo/issue-bot@v3
         with:
           token: ${{ github.token }}
           title: "Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }} - ${{ github.run_id }}"
           body: ${{ steps.check_migration.outputs.issue_body }}
-          labels: "migration"
+          labels: |
+            migration
+            ${{ steps.extract_filename.outputs.filename_label }}
           assignees: ${{ github.actor }}
 
       - name: Send Slack notification for migration
-        if: steps.check_migration.outputs.migration_required == 'true'
+        if: steps.check_migration.outputs.migration_required == 'true' && steps.check_existing_issue.outputs.issue_exists == 'false'
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
             {
-              "text": "🚨 Tekton Task Bundle Migration Required",
+              "text": "🚨 Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }}",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "🚨 Tekton Task Bundle Migration Required"
+                    "text": "🚨 Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }}"
                   }
                 },
                 {
