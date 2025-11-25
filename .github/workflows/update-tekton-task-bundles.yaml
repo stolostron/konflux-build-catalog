@@ -115,9 +115,7 @@ jobs:
           token: ${{ github.token }}
           title: "Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }} - ${{ github.run_id }}"
           body: ${{ steps.check_migration.outputs.issue_body }}
-          labels: |
-            migration
-            ${{ steps.extract_filename.outputs.filename_label }}
+          labels: "migration, ${{ steps.extract_filename.outputs.filename_label }}"
           assignees: ${{ github.actor }}
 
       - name: Send Slack notification for migration
