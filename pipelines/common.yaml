@@ -61,11 +61,11 @@ spec:
       type: string
     - default:
         - MCE_VERSION_2_11=v2.11.0
-        - MCE_VERSION_2_10=v2.10.0
-        - MCE_VERSION_2_9=v2.9.1
-        - MCE_VERSION_2_8=v2.8.3
-        - MCE_VERSION_2_7=v2.7.6
-        - MCE_VERSION_2_6=v2.6.8
+        - MCE_VERSION_2_10=v2.10.1
+        - MCE_VERSION_2_9=v2.9.2
+        - MCE_VERSION_2_8=v2.8.4
+        - MCE_VERSION_2_7=v2.7.8
+        - MCE_VERSION_2_6=v2.6.9
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array

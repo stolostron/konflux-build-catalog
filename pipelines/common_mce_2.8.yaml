@@ -117,7 +117,7 @@ spec:
       name: slack-group-id
       description: |
         The group id of the slack user group, if this is set will mention the group in the slack message; this id can be found by viewing the user group details. e.g. S07XXXXXXXX
-    - default: "v2.8.3"
+    - default: "v2.8.4"
       description: The version of the MCE
       name: mce-version
       type: string
