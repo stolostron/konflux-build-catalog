@@ -124,6 +124,10 @@ spec:
       default: docker
       type: string
       description: The format for the resulting image's mediaType. Valid values are oci or docker.
+    - name: enable-cache-proxy
+      default: 'false'
+      description: Enable cache proxy configuration
+      type: string
   results:
     - description: ""
       name: IMAGE_URL
@@ -151,6 +155,8 @@ spec:
           value: $(params.rebuild)
         - name: skip-checks
           value: $(params.skip-checks)
+        - name: enable-cache-proxy
+          value: $(params.enable-cache-proxy)
       taskRef:
         params:
           - name: name

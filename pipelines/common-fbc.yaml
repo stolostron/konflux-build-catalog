@@ -172,6 +172,10 @@ spec:
     name: slack-group-id
     description: |
       The group id of the slack user group, if this is set will mention the group in the slack message; this id can be found by viewing the user group details. e.g. S07XXXXXXXX
+  - name: enable-cache-proxy
+    default: 'false'
+    description: Enable cache proxy configuration
+    type: string
   results:
   - description: ""
     name: IMAGE_URL
@@ -194,6 +198,8 @@ spec:
       value: $(params.rebuild)
     - name: skip-checks
       value: $(params.skip-checks)
+    - name: enable-cache-proxy
+      value: $(params.enable-cache-proxy)
     taskRef:
       params:
       - name: name
