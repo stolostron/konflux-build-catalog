@@ -3,7 +3,7 @@ name: Update Tekton Task Bundles
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 2 * * *" # Runs daily at 02:00 UTC
+    - cron: "0 2 * * 1" # Runs weekly on Monday at 02:00 UTC
 
 jobs:
   update-tekton-task-bundles:
