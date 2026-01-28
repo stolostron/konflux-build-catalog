@@ -14,16 +14,9 @@ This repository contains the following pipelines:
 - `pipelines/common-oci-ta.yaml`: A common pipeline for single-platform container image. It aligns with [docker-build-oci-ta pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/docker-build-oci-ta) and is used by bundle repositories that do not require multi-platform builds, such as `multicluster-global-hub-operator-bundle`.
 - `pipelines/common-fbc.yaml`: A common pipeline for FBC (File-Based Catalogs) builds. It aligns with [fbc-builder pipeline](https://github.com/konflux-ci/build-definitions/tree/main/pipelines/fbc-builder) and is used by repositories that build FBCs, such as `multicluster-global-hub-operator-catalog`.
 
-### MCE (Multicluster Engine) Specific Pipelines
+### MCE Version Compatibility
 
-- `pipelines/common_mce_2.11.yaml`: Common pipeline for MCE 2.11 (`release-mce-211`)
-- `pipelines/common_mce_2.10.yaml`: Common pipeline for MCE 2.10 (`release-mce-210`)
-- `pipelines/common_mce_2.9.yaml`: Common pipeline for MCE 2.9 (`release-mce-29`)
-- `pipelines/common_mce_2.8.yaml`: Common pipeline for MCE 2.8 (`release-mce-28`)
-- `pipelines/common_mce_2.7.yaml`: Common pipeline for MCE 2.7 (`release-mce-27`)
-- `pipelines/common_mce_2.6.yaml`: Common pipeline for MCE 2.6 (`release-mce-26`)
-
-All MCE pipelines are identical to the main common pipeline but with version-specific `konflux-application-name` parameters for proper Slack notifications and application identification.
+For backward compatibility, MCE version-specific pipeline paths (`pipelines/common_mce_2.X.yaml`) are provided as symbolic links to `pipelines/common.yaml`. Repositories referencing these paths will continue to work without changes.
 
 ## Pipeline Selection Guide
 
@@ -35,31 +28,15 @@ Choose the appropriate pipeline based on your project requirements:
 - **Single-platform bundles**: Use `pipelines/common-oci-ta.yaml`
 - **File-Based Catalogs**: Use `pipelines/common-fbc.yaml`
 
-### For MCE (Multicluster Engine) Projects
-
-- __MCE 2.11__: Use `pipelines/common_mce_2.11.yaml`
-- __MCE 2.10__: Use `pipelines/common_mce_2.10.yaml`
-- __MCE 2.9__: Use `pipelines/common_mce_2.9.yaml`
-- __MCE 2.8__: Use `pipelines/common_mce_2.8.yaml`
-- __MCE 2.7__: Use `pipelines/common_mce_2.7.yaml`
-- __MCE 2.6__: Use `pipelines/common_mce_2.6.yaml`
-
-The MCE-specific pipelines ensure proper application identification and Slack notifications for each MCE release stream.
-
 ## Project Structure
 
 ```ini
 .
 ├── pipelines/
-│   ├── common.yaml              # Main common build pipeline to a multi-platform container image
-│   ├── common-fbc.yaml          # Main common build pipeline to a file-based catalogs image
-│   ├── common-oci-ta.yaml       # Main common build pipeline to a single-platform container image
-│   ├── common_mce_2.11.yaml     # Common pipeline for MCE 2.11
-│   ├── common_mce_2.10.yaml     # Common pipeline for MCE 2.10
-│   ├── common_mce_2.9.yaml      # Common pipeline for MCE 2.9
-│   ├── common_mce_2.8.yaml      # Common pipeline for MCE 2.8
-│   ├── common_mce_2.7.yaml      # Common pipeline for MCE 2.7
-│   └── common_mce_2.6.yaml      # Common pipeline for MCE 2.6
+│   ├── common.yaml              # Main common build pipeline for multi-platform container images
+│   ├── common-fbc.yaml          # Common build pipeline for File-Based Catalogs
+│   ├── common-oci-ta.yaml       # Common build pipeline for single-platform container images
+│   └── common_mce_*.yaml        # Symlinks to common.yaml for backward compatibility
 ├── v4.13/*                       # FBC build files for OpenShift 4.13
 ├── .tekton/                     # Konflux configuration for this project
 │   ├── common-pipeline-*-pull-request.yaml  # PR configurations for all pipelines
@@ -102,7 +79,7 @@ This project includes two complementary GitHub Actions workflows for fully autom
 Runs daily at 02:00 UTC and:
 
 1. Automatically checks for the latest versions of Tekton task bundles
-2. Updates task references in all pipeline files (`common.yaml`, `common_mce_*.yaml`, `common-fbc.yaml`, `common-oci-ta.yaml`)
+2. Updates task references in pipeline files (`common.yaml`, `common-fbc.yaml`, `common-oci-ta.yaml`)
 3. Creates a PR with the `automated-update` label if there are updates
 
 ### Auto-merge Workflow (`.github/workflows/auto-merge-automated-updates.yaml`)
@@ -129,7 +106,7 @@ pipelineRef:
     - name: revision
       value: main
     - name: pathInRepo
-      value: pipelines/common.yaml # or pipelines/common_mce_X.Y.yaml for MCE X.Y branches
+      value: pipelines/common.yaml
 ```
 
 Follow this PR to understand how to update your repository: https://github.com/stolostron/managedcluster-import-controller/pull/730

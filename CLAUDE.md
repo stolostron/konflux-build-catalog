@@ -16,14 +16,8 @@ The `pipelines/` directory contains standardized Tekton pipeline definitions for
 - `pipelines/common-oci-ta.yaml` - Single-platform container build pipeline for bundle repositories
 - `pipelines/common-fbc.yaml` - File-Based Catalogs (FBC) build pipeline
 
-**MCE Version-Specific Pipelines:**
-- `pipelines/common_mce_2.6.yaml` - MCE 2.6 compatibility variant
-- `pipelines/common_mce_2.7.yaml` - MCE 2.7 compatibility variant
-- `pipelines/common_mce_2.8.yaml` - MCE 2.8 compatibility variant
-- `pipelines/common_mce_2.9.yaml` - MCE 2.9 compatibility variant
-- `pipelines/common_mce_2.10.yaml` - MCE 2.10 compatibility variant
-
-All MCE-specific pipelines maintain identical structure to the main pipeline but may have different defaults and version-specific configurations optimized for their respective MCE releases.
+**MCE Compatibility Symlinks:**
+- `pipelines/common_mce_*.yaml` - Symbolic links to `common.yaml` for backward compatibility with existing repository references
 
 ### Automation
 - `update-tekton-task-bundles.sh` - Updates Tekton task bundle references to latest versions
@@ -63,7 +57,7 @@ The pipelines implement a comprehensive container build workflow:
 bash update-tekton-task-bundles.sh pipelines/common.yaml
 
 # Update multiple pipeline files at once
-bash update-tekton-task-bundles.sh pipelines/common.yaml pipelines/common_mce_2.10.yaml
+bash update-tekton-task-bundles.sh pipelines/common.yaml pipelines/common-fbc.yaml
 
 # Check for required migrations (used in CI)
 bash update-tekton-task-bundles.sh pipelines/common.yaml > migration_data.json
@@ -114,7 +108,6 @@ strategy:
   matrix:
     pipeline_file:
       - common.yaml
-      - common_mce_2.10.yaml
       - common-fbc.yaml
       - common-oci-ta.yaml
       - new-pipeline.yaml  # Add new files here
@@ -146,14 +139,15 @@ pipelineRef:
     - name: revision
       value: main
     - name: pathInRepo
-      value: pipelines/common.yaml  # or common_mce_X.Y.yaml, common-oci-ta.yaml, common-fbc.yaml
+      value: pipelines/common.yaml  # or common-oci-ta.yaml, common-fbc.yaml
 ```
 
 ### Pipeline Selection Guide
 - **Multi-platform builds**: Use `pipelines/common.yaml`
-- **MCE version-specific builds**: Use corresponding `pipelines/common_mce_X.Y.yaml` (versions 2.6, 2.7, 2.8, 2.9, 2.10)
 - **Single-platform bundles**: Use `pipelines/common-oci-ta.yaml`
 - **File-Based Catalogs**: Use `pipelines/common-fbc.yaml`
+
+Note: MCE version-specific paths (`pipelines/common_mce_X.Y.yaml`) are symlinks to `common.yaml` for backward compatibility.
 
 ## Key Technologies
 - **Tekton Pipelines** - Kubernetes-native CI/CD
