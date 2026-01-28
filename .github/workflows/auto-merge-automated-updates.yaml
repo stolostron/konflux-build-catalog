@@ -12,13 +12,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get PRs with automated-update label
+      - name: Get PRs from trusted bots
         id: get_prs
         run: |
-          # Get all open PRs with automated-update label
+          # Get all open PRs and filter by trusted bot authors
+          # Only PRs created by github-actions or acm-agent bots are eligible for auto-merge
           # Check that PR is mergeable and all non-tide checks are successful
-          prs=$(gh pr list --label "automated-update" --state open --json number,title,url,statusCheckRollup,mergeable --jq '
+          prs=$(gh pr list --state open --json number,title,url,author,statusCheckRollup,mergeable --jq '
             .[] | select(
+              (.author.login == "app/github-actions" or .author.login == "app/acm-agent") and
               .mergeable == "MERGEABLE" and
               ([.statusCheckRollup[] | select(.context != "tide" and .name != "tide" and (.state == "FAILURE" or .conclusion == "FAILURE"))] | length == 0) and
               ([.statusCheckRollup[] | select(.context != "tide" and .name != "tide" and (.state == "SUCCESS" or .conclusion == "SUCCESS"))] | length > 0)
@@ -58,7 +60,7 @@ jobs:
               echo "✅ Successfully merged PR #$pr_number"
 
               # Optional: Add a comment to indicate auto-merge
-              gh pr comment "$pr_number" --body "🤖 This PR was automatically merged because all checks passed and it has the \`automated-update\` label."
+              gh pr comment "$pr_number" --body "🤖 This PR was automatically merged because all checks passed and it was created by a trusted bot."
             else
               echo "❌ Failed to merge PR #$pr_number"
 
@@ -74,6 +76,6 @@ jobs:
       - name: Summary
         run: |
           echo "Auto-merge workflow completed"
-          echo "Checked for PRs with 'automated-update' label that have:"
+          echo "Checked for PRs from trusted bots (github-actions, acm-agent) that have:"
           echo "- All status checks passing (SUCCESS)"
           echo "- Mergeable state (no conflicts)"
