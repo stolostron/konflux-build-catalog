@@ -3,7 +3,7 @@ name: Auto-merge Automated Updates
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 4 * * 1" # Runs weekly on Monday at 04:00 UTC (1 hour after tekton bundle update)
+    - cron: "0 4 * * 0" # Runs weekly on Sunday at 04:00 UTC (4 hours after tekton bundle update)
 
 jobs:
   auto-merge:
