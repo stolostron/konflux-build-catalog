@@ -60,6 +60,7 @@ spec:
       name: build-image-index
       type: string
     - default:
+        - MCE_VERSION_2_17=v2.17.0
         - MCE_VERSION_2_11=v2.11.0
         - MCE_VERSION_2_10=v2.10.1
         - MCE_VERSION_2_9=v2.9.2
