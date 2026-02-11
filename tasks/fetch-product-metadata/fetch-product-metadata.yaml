@@ -1,0 +1,168 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: fetch-product-metadata
+spec:
+  description: >-
+    Fetch ACM/MCE metadata from the bundle repository.
+  params:
+    - name: output-image
+      type: string
+      description: >-
+        The output image or image repository from which to parse the component, product, and version. The image repository is expected to be in the form [<registry>/<org>/<namespace>/]<component>-{acm|mce}-<XY>[:<tag>].
+  results:
+    - name: z-stream-version
+      description: Semantic z-stream version (i.e. without the 'v' prefix)
+    - name: image-labels
+      description: Image labels to apply to the container image
+      type: array
+  stepTemplate:
+    image: quay.io/konflux-ci/task-runner:1.3.0@sha256:3f007bf58821885f8aa30d72c84fcbfcb14babc6521eaf6ac1bc4f8c078d9e58
+  steps:
+    - name: parse-output-image
+      displayName: Parse data from output image
+      env:
+        - name: OUTPUT_IMAGE
+          value: $(params.output-image)
+      results:
+        - name: component
+          description: Name of the Konflux component
+        - name: product
+          description: Name of the product (ACM or MCE)
+        - name: branch
+          description: Branch associated with the product version
+      script: |-
+        # shellcheck shell=bash
+
+        # Expected format: [<registry>/<repo>/<build-namespace>/]<component>-{acm|mce}-<XY>[:<tag>]
+        echo "* Parsing output image"
+        echo "  Output image: '${OUTPUT_IMAGE}'"
+        if [[ -z ${OUTPUT_IMAGE} ]]; then
+          echo "error: output-image parameter is empty" >&2
+          exit 1
+        fi
+
+        echo "* Extracting image repository"
+        output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+')
+        echo "  Image repository: '${output_image_repo}'"
+        if [[ -z ${output_image_repo} ]]; then
+          echo "error: failed to parse image repository from image '${OUTPUT_IMAGE}'" >&2
+          exit 1
+        fi
+        echo "* Extracting component"
+        component=$(echo "${output_image_repo}" | sed -E 's/-(acm|mce)-[0-9]+//')
+        echo "  Component: '${component}'"
+        if [[ -z ${component} ]] || [[ ${component} == "${output_image_repo}" ]]; then
+          echo "error: failed to parse component from image repository '${output_image_repo}'" >&2
+          exit 1
+        fi
+
+        echo "* Extracting product"
+        product=$(echo "${output_image_repo#"${component}-"}" | cut -d '-' -f 1)
+        echo "  Product: '${product}'"
+        if [[ -z ${product} ]] || [[ ${product} == "${output_image_repo}" ]]; then
+          echo "error: failed to parse product from image repository '${output_image_repo}'" >&2
+          exit 1
+        fi
+
+        case ${product} in
+        "acm")
+          branch="release"
+          ;;
+        "mce")
+          branch="backplane"
+          ;;
+        *)
+          echo "error: unexpected product '${product}' from image repository '${output_image_repo}': product must be 'acm' or 'mce'" >&2
+          exit 1
+          ;;
+        esac
+
+        echo "* Extracting version"
+        parsed_version=${output_image_repo#"${component}-${product}-"}
+        version_y=${parsed_version#[0-9]}
+        version_x=${parsed_version%"${version_y}"}
+        version="${version_x}.${version_y}"
+
+        echo "  Version: '${parsed_version}' -> '${version}'"
+        if [[ -z ${parsed_version} ]] || [[ -z ${version_x} ]] || [[ -z ${version_y} ]] ||
+          [[ ${version_x} == "${parsed_version}" ]] || [[ ${version_y} == "${parsed_version}" ]] ||
+          [[ ${version_x} == "${product}" ]] || [[ ${version_y} == "${product}" ]]; then
+          echo "error: failed to parse version from image repository '${output_image_repo}'" >&2
+          exit 1
+        fi
+
+        # Write results for next steps to pipeline results files
+        echo -n "${component}" >"$(step.results.component.path)"
+        echo -n "${product}" >"$(step.results.product.path)"
+        echo -n "${branch}-${version}" >"$(step.results.branch.path)"
+    - name: parse-product-metadata
+      displayName: Clone bundle repository and parse product metadata
+      env:
+        - name: COMPONENT
+          value: $(steps.parse-output-image.results.component)
+        - name: PRODUCT
+          value: $(steps.parse-output-image.results.product)
+        - name: BRANCH
+          value: $(steps.parse-output-image.results.branch)
+      script: |-
+        # shellcheck shell=bash
+
+        repo="${PRODUCT}-operator-bundle"
+
+        echo "* Cloning '${repo}' repository at branch '${BRANCH}'"
+        git clone \
+          --depth 1 \
+          --branch "${BRANCH}" \
+          "https://github.com/stolostron/${repo}"
+
+        cd "${repo}" || {
+          echo "error: failed to change directory to '${repo}'" >&2
+          exit 1
+        }
+
+        echo "* Extracting Z-stream version"
+        if ! [[ -f Z_RELEASE_VERSION ]]; then
+          echo "error: Z_RELEASE_VERSION file not found" >&2
+          exit 1
+        fi
+
+        z_stream_version=$(cat Z_RELEASE_VERSION)
+        echo "  Z-stream version: '${z_stream_version}'"
+
+        echo "* Extracting GA image repository"
+        config_path="config/${PRODUCT}-manifest-gen-config.json"
+        if ! [[ -f ${config_path} ]]; then
+          echo "error: ${config_path} file not found" >&2
+          exit 1
+        fi
+
+        ga_image_namespace=$(jq -r '.["product-images"].["image-namespace"] // ""' "${config_path}")
+        ga_image_name=$(
+          jq -er '.["product-images"].["image-list"][]
+            | select(.["konflux-component-name"] == "'"${COMPONENT}"'")
+            | .["publish-name"] // ""' "${config_path}"
+        )
+        echo "  GA image namespace: '${ga_image_namespace}'"
+        echo "  GA image name: '${ga_image_name}'"
+        if [[ -z ${ga_image_namespace} ]] || [[ -z ${ga_image_name} ]]; then
+          echo "error: failed to parse GA image namespace or name from ${config_path}" >&2
+          exit 1
+        fi
+
+        if [[ ${PRODUCT} == "mce" ]]; then
+          PRODUCT="multicluster_engine"
+        fi
+
+        # Write results for task result files
+        cpe="cpe:/a:redhat:${PRODUCT}:${BRANCH#*-}::${ga_image_name##*-rh}"
+        name="${ga_image_namespace}/${ga_image_name}"
+        version="v${z_stream_version}"
+
+        echo "* Writing results to task result files"
+        echo -n "  z-stream-version: "
+        echo -n "${z_stream_version}" | tee "$(results.z-stream-version.path)"
+        echo
+        echo -n "  image-labels: "
+        printf '["cpe=%s","name=%s","version=%s"]' "${cpe}" "${name}" "${version}" | tee "$(results.image-labels.path)"
+        echo
