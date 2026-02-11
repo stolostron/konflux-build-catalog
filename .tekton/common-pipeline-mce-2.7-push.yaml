@@ -3,11 +3,12 @@ kind: PipelineRun
 metadata:
   annotations:
     build.appstudio.openshift.io/repo: https://github.com/stolostron/konflux-build-catalog?rev={{revision}}
-    build.appstudio.redhat.com/commit_sha: '{{revision}}'
-    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    build.appstudio.redhat.com/commit_sha: "{{revision}}"
+    build.appstudio.redhat.com/target_branch: "{{target_branch}}"
     pipelinesascode.tekton.dev/cancel-in-progress: "false"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
+    pipelinesascode.tekton.dev/on-cel-expression:
+      event == "push" && target_branch
       == "main" && ("pipelines/common_mce_2.7.yaml".pathChanged() || ".tekton/common-pipeline-mce-2.7-push.yaml".pathChanged())
   creationTimestamp: null
   labels:
@@ -18,39 +19,39 @@ metadata:
   namespace: crt-redhat-acm-tenant
 spec:
   params:
-  - name: git-url
-    value: '{{source_url}}'
-  - name: revision
-    value: '{{revision}}'
-  - name: output-image
-    value: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/common-pipeline:{{revision}}
-  - name: dockerfile
-    value: Dockerfile
-  - name: build-platforms
-    value:
-    - linux/x86_64
-  - name: send-slack-notification
-    value: "true"
-  - name: konflux-application-name
-    # Use "release-mce-27" for MCE 2.7
-    value: "konflux-build-catalog"
-  - name: slack-member-id
-    # With this parameter, the notification will mention the user in the slack message when the pipeline run failed; this is not required.
-    # Please make sure replace the value with component owner's slack member id.
-    value: "U02CRCBPXK4"
+    - name: git-url
+      value: "{{source_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: output-image
+      value: quay.io/redhat-user-workloads/crt-redhat-acm-tenant/common-pipeline:{{revision}}
+    - name: dockerfile
+      value: Dockerfile
+    - name: build-platforms
+      value:
+        - linux/x86_64
+    - name: send-slack-notification
+      value: "true"
+    - name: konflux-application-name
+      # Use "release-mce-27" for MCE 2.7
+      value: "konflux-build-catalog"
+    - name: slack-member-id
+      # With this parameter, the notification will mention the user in the slack message when the pipeline run failed; this is not required.
+      # Please make sure replace the value with component owner's slack member id.
+      value: "U02CRCBPXK4"
   pipelineRef:
     resolver: git
     params:
       - name: url
         value: "https://github.com/stolostron/konflux-build-catalog.git"
       - name: revision
-        value: '{{revision}}' # {{revision}} is the commit hash of the PR branch
+        value: "{{revision}}" # {{revision}} is the commit hash of the PR branch
       - name: pathInRepo
         value: pipelines/common_mce_2.7.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-common-pipeline
   workspaces:
-  - name: git-auth
-    secret:
-      secretName: '{{ git_auth_secret }}'
+    - name: git-auth
+      secret:
+        secretName: "{{ git_auth_secret }}"
 status: {}

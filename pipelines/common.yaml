@@ -74,8 +74,8 @@ spec:
       description: Path to a file with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
       name: build-args-file
       type: string
-    - default: 'false'
-      description: 'Whether to enable privileged mode, should be used only with remote VMs'
+    - default: "false"
+      description: "Whether to enable privileged mode, should be used only with remote VMs"
       name: privileged-nested
       type: string
     - default:
@@ -89,7 +89,7 @@ spec:
     - default: "false"
       description: Enable in-development package managers, such as pre-fetch rpm packages defined in RPM lockfiles.
       name: use-dev-package-managers
-    - default: 'true'
+    - default: "true"
       description: Check symlinks in the repo. If they're pointing outside of the repo, the build will fail.
       name: enable-symlink-check
       type: string
@@ -132,7 +132,7 @@ spec:
       type: string
       description: The format for the resulting image's mediaType. Valid values are oci or docker.
     - name: enable-cache-proxy
-      default: 'false'
+      default: "false"
       description: Enable cache proxy configuration
       type: string
   results:
@@ -420,9 +420,9 @@ spec:
     - name: clamav-scan
       matrix:
         params:
-        - name: image-arch
-          value:
-          - $(params.build-platforms)
+          - name: image-arch
+            value:
+              - $(params.build-platforms)
       params:
         - name: image-digest
           value: $(tasks.build-image-index.results.IMAGE_DIGEST)
