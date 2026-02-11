@@ -1,0 +1,18 @@
+---
+extends: default
+
+yaml-files:
+  - "*.yaml"
+  - "*.yml"
+  - ".yamllint"
+  - "*.yaml.template"
+
+ignore:
+  - pipelines/common_mce_*.yaml
+  - .git/
+
+rules:
+  comments: disable
+  document-start: disable
+  line-length: disable
+  truthy: disable

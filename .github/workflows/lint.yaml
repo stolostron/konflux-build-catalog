@@ -1,4 +1,4 @@
-name: Lint and Generate
+name: Code Quality
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   lint:
+    name: Lint and Generate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -16,9 +17,12 @@ jobs:
         run: sudo apt-get install -y shellcheck
 
       - name: ShellCheck scripts
-        run: shellcheck ./tasks/**/*.sh
+        run: shellcheck ./*.sh ./**/*.sh
 
       - name: Generate tasks
         run: |
           ./build/generate-tasks.sh
           git diff --exit-code
+
+      - name: Lint YAML
+        run: yamllint --config-file build/.yamllint .
