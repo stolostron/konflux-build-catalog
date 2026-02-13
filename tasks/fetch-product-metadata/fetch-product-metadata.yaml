@@ -43,10 +43,10 @@ spec:
         fi
 
         echo "* Extracting image repository"
-        output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+')
+        output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+' || true)
         echo "  Image repository: '${output_image_repo}'"
         if [[ -z ${output_image_repo} ]]; then
-          echo "error: failed to parse image repository from image '${OUTPUT_IMAGE}'" >&2
+          echo "error: failed to parse ACM or MCE image repository from image '${OUTPUT_IMAGE}'" >&2
           exit 1
         fi
         echo "* Extracting component"
