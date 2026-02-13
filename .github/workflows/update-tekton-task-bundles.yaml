@@ -12,6 +12,7 @@ jobs:
       matrix:
         pipeline_file:
           - common.yaml
+          - common-base.yaml
           - common-fbc.yaml
           - common-oci-ta.yaml
       fail-fast: false
