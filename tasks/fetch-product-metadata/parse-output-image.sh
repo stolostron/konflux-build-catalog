@@ -9,7 +9,7 @@ if [[ -z ${OUTPUT_IMAGE} ]]; then
 fi
 
 echo "* Extracting image repository"
-output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+' || true)
+output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+' | tail -n 1 )
 echo "  Image repository: '${output_image_repo}'"
 if [[ -z ${output_image_repo} ]]; then
   echo "error: failed to parse ACM or MCE image repository from image '${OUTPUT_IMAGE}'" >&2
