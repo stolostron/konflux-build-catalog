@@ -199,7 +199,7 @@ spec:
           - name: url
             value: https://github.com/stolostron/konflux-build-catalog.git
           - name: revision
-            value: main
+            value: 5b59604bda84b13ac9c0dd7858e7316d03d72e20
           - name: pathInRepo
             value: tasks/fetch-product-metadata/fetch-product-metadata.yaml
         resolver: git
