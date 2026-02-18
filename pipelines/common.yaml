@@ -193,6 +193,21 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
+    - name: fetch-product-metadata
+      params:
+        - name: output-image
+          value: $(params.output-image)
+      runAfter:
+        - init
+      taskRef:
+        params:
+          - name: url
+            value: https://github.com/stolostron/konflux-build-catalog.git
+          - name: revision
+            value: 99b6f9234b9a0bc23a8903350569acdaee554c66
+          - name: pathInRepo
+            value: tasks/fetch-product-metadata/fetch-product-metadata.yaml
+        resolver: git
     - name: prefetch-dependencies
       params:
         - name: input
@@ -245,6 +260,10 @@ spec:
         - name: BUILD_ARGS
           value:
             - $(params.build-args[*])
+            - MCE_VERSION=v$(tasks.fetch-product-metadata.results.z-stream-version)
+        - name: LABELS
+          value:
+            - $(tasks.fetch-product-metadata.results.image-labels[*])
         - name: BUILD_ARGS_FILE
           value: $(params.build-args-file)
         - name: PRIVILEGED_NESTED
@@ -259,6 +278,7 @@ spec:
           value: $(params.buildah-format)
       runAfter:
         - prefetch-dependencies
+        - fetch-product-metadata
       taskRef:
         params:
           - name: name
@@ -268,7 +288,6 @@ spec:
           - name: kind
             value: task
         resolver: bundles
-
     - name: build-image-index
       params:
         - name: IMAGE
@@ -295,7 +314,6 @@ spec:
           - name: kind
             value: task
         resolver: bundles
-
     - name: build-source-image
       params:
         - name: BINARY_IMAGE
