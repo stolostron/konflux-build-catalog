@@ -4,6 +4,7 @@ if [[ ${SKIP_METADATA_FETCH} == "true" ]]; then
   echo "* Skipping metadata fetch"
   echo -n "" >"$(results.z-stream-version.path)"
   echo -n "[]" >"$(results.image-labels.path)"
+  echo -n "" >"$(results.konflux-application.path)"
   exit 0
 fi
 
@@ -69,4 +70,7 @@ echo -n "${z_stream_version}" | tee "$(results.z-stream-version.path)"
 echo
 echo -n "  image-labels: "
 printf '["cpe=%s","name=%s","version=%s"]' "${cpe}" "${name}" "${version}" | tee "$(results.image-labels.path)"
+echo
+echo -n "  konflux-application: "
+echo -n "${APPLICATION}" | tee "$(results.konflux-application.path)"
 echo

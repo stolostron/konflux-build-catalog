@@ -16,6 +16,7 @@ if [[ ${OUTPUT_IMAGE} == "quay.io/redhat-user-workloads/crt-redhat-acm-tenant/co
   echo -n "" >"$(step.results.component.path)"
   echo -n "" >"$(step.results.product.path)"
   echo -n "" >"$(step.results.branch.path)"
+  echo -n "" >"$(step.results.konflux-application.path)"
   echo -n "true" >"$(step.results.skip-metadata-fetch.path)"
   exit 0
 fi
@@ -70,3 +71,4 @@ fi
 echo -n "${component}" >"$(step.results.component.path)"
 echo -n "${product}" >"$(step.results.product.path)"
 echo -n "${branch}-${version}" >"$(step.results.branch.path)"
+echo -n "release-${product}-${parsed_version}" >"$(step.results.konflux-application.path)"

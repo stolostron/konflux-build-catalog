@@ -87,10 +87,6 @@ spec:
       description: Whether to send slack notification when the pipeline run failed
       name: send-slack-notification
       type: string
-    - default: "" # Need to change for each release, empty for non-release
-      name: konflux-application-name
-      description: The name of the application in Konflux, this is required when send-slack-notification is true
-      type: string
     - default: "slack-acm-notify-secret"
       name: slack-webhook-url-secret-name
       description: |
@@ -196,7 +192,7 @@ spec:
           - name: url
             value: https://github.com/stolostron/konflux-build-catalog.git
           - name: revision
-            value: 5b59604bda84b13ac9c0dd7858e7316d03d72e20
+            value: $(params.revision)
           - name: pathInRepo
             value: tasks/fetch-product-metadata/fetch-product-metadata.yaml
         resolver: git
@@ -674,7 +670,7 @@ spec:
             :bangbang: PipelineRun name: $(context.pipelineRun.name) id: $(context.pipelineRun.uid) failed:
             - git source: $(params.git-url)/commit/$(params.revision)
             - output image: $(params.output-image)
-            - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(params.konflux-application-name)/pipelineruns/$(context.pipelineRun.name)
+            - see details: https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/applications/$(tasks.fetch-product-metadata.results.konflux-application)/pipelineruns/$(context.pipelineRun.name)
         - name: secret-name
           value: $(params.slack-webhook-url-secret-name)
         - name: key-name
