@@ -16,6 +16,10 @@ spec:
     - name: image-labels
       description: Image labels to apply to the container image
       type: array
+    - name: skip-metadata-fetch
+      description: Whether to skip the metadata fetch step
+      type: string
+      default: "false"
   stepTemplate:
     image: quay.io/konflux-ci/task-runner:1.3.0@sha256:3f007bf58821885f8aa30d72c84fcbfcb14babc6521eaf6ac1bc4f8c078d9e58
   steps:
@@ -45,6 +49,11 @@ spec:
         echo "* Extracting image repository"
         output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+' | tail -n 1 )
         echo "  Image repository: '${output_image_repo}'"
+        if [[ ${OUTPUT_IMAGE} == "quay.io/redhat-user-workloads/crt-redhat-acm-tenant/common-pipeline:"* ]]; then
+          echo "* Output image is a common pipeline image, skipping"
+          echo -n "true" >"$(step.results.skip-metadata-fetch.path)"
+          exit 0
+        fi
         if [[ -z ${output_image_repo} ]]; then
           echo "error: failed to parse ACM or MCE image repository from image '${OUTPUT_IMAGE}'" >&2
           exit 1
@@ -105,8 +114,20 @@ spec:
           value: $(steps.parse-output-image.results.product)
         - name: BRANCH
           value: $(steps.parse-output-image.results.branch)
+        - name: SKIP_METADATA_FETCH
+          value: $(steps.parse-output-image.results.skip-metadata-fetch)
       script: |-
         # shellcheck shell=bash
+
+        if ${SKIP_METADATA_FETCH}; then
+          echo "* Skipping metadata fetch"
+          exit 0
+        fi
+
+        if [[ -z ${PRODUCT} ]] || [[ -z ${BRANCH} ]]; then
+          echo "error: PRODUCT or BRANCH is not set to parse product metadata from bundle repository" >&2
+          exit 1
+        fi
 
         repo="${PRODUCT}-operator-bundle"
 

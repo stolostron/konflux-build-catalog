@@ -11,6 +11,11 @@ fi
 echo "* Extracting image repository"
 output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9]+' | tail -n 1 )
 echo "  Image repository: '${output_image_repo}'"
+if [[ ${OUTPUT_IMAGE} == "quay.io/redhat-user-workloads/crt-redhat-acm-tenant/common-pipeline:"* ]]; then
+  echo "* Output image is a common pipeline image, skipping"
+  echo -n "true" >"$(step.results.skip-metadata-fetch.path)"
+  exit 0
+fi
 if [[ -z ${output_image_repo} ]]; then
   echo "error: failed to parse ACM or MCE image repository from image '${OUTPUT_IMAGE}'" >&2
   exit 1

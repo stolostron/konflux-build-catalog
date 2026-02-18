@@ -1,5 +1,15 @@
 # shellcheck shell=bash
 
+if ${SKIP_METADATA_FETCH}; then
+  echo "* Skipping metadata fetch"
+  exit 0
+fi
+
+if [[ -z ${PRODUCT} ]] || [[ -z ${BRANCH} ]]; then
+  echo "error: PRODUCT or BRANCH is not set to parse product metadata from bundle repository" >&2
+  exit 1
+fi
+
 repo="${PRODUCT}-operator-bundle"
 
 echo "* Cloning '${repo}' repository at branch '${BRANCH}'"
