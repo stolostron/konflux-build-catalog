@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 
-if ${SKIP_METADATA_FETCH}; then
+if [[ ${SKIP_METADATA_FETCH} == "true" ]]; then
   echo "* Skipping metadata fetch"
   exit 0
 fi
