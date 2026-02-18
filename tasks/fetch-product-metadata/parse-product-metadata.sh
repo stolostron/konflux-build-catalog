@@ -2,6 +2,8 @@
 
 if [[ ${SKIP_METADATA_FETCH} == "true" ]]; then
   echo "* Skipping metadata fetch"
+  echo -n "" >"$(results.z-stream-version.path)"
+  echo -n "[]" >"$(results.image-labels.path)"
   exit 0
 fi
 

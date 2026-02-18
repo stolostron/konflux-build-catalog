@@ -13,6 +13,9 @@ output_image_repo=$(echo "${OUTPUT_IMAGE}" | grep -oE '[a-z0-9-]+-(acm|mce)-[0-9
 echo "  Image repository: '${output_image_repo}'"
 if [[ ${OUTPUT_IMAGE} == "quay.io/redhat-user-workloads/crt-redhat-acm-tenant/common-pipeline:"* ]]; then
   echo "* Output image is a common pipeline image, skipping"
+  echo -n "" >"$(step.results.component.path)"
+  echo -n "" >"$(step.results.product.path)"
+  echo -n "" >"$(step.results.branch.path)"
   echo -n "true" >"$(step.results.skip-metadata-fetch.path)"
   exit 0
 fi
