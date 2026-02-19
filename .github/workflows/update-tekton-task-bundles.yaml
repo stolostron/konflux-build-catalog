@@ -14,7 +14,9 @@ jobs:
           - common.yaml
           - common-base.yaml
           - common-fbc.yaml
+          - common-fbc-nofips.yaml
           - common-oci-ta.yaml
+          - common-stage.yaml
       fail-fast: false
     steps:
       - name: Checkout repository
