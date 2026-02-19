@@ -167,6 +167,7 @@ spec:
           - name: kind
             value: task
         resolver: bundles
+
     - name: clone-repository
       params:
         - name: url
@@ -193,6 +194,23 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
+
+    - name: fetch-product-metadata
+      params:
+        - name: output-image
+          value: $(params.output-image)
+      runAfter:
+        - init
+      taskRef:
+        params:
+          - name: url
+            value: https://github.com/stolostron/konflux-build-catalog.git
+          - name: revision
+            value: d6f8973b7696fe0615dcf05b2428811842453745
+          - name: pathInRepo
+            value: tasks/fetch-product-metadata/fetch-product-metadata.yaml
+        resolver: git
+
     - name: prefetch-dependencies
       params:
         - name: input
@@ -221,6 +239,7 @@ spec:
           workspace: git-auth
         - name: netrc
           workspace: netrc
+
     - matrix:
         params:
           - name: PLATFORM
@@ -245,6 +264,10 @@ spec:
         - name: BUILD_ARGS
           value:
             - $(params.build-args[*])
+            - MCE_VERSION=v$(tasks.fetch-product-metadata.results.z-stream-version)
+        - name: LABELS
+          value:
+            - $(tasks.fetch-product-metadata.results.image-labels[*])
         - name: BUILD_ARGS_FILE
           value: $(params.build-args-file)
         - name: PRIVILEGED_NESTED
@@ -259,6 +282,7 @@ spec:
           value: $(params.buildah-format)
       runAfter:
         - prefetch-dependencies
+        - fetch-product-metadata
       taskRef:
         params:
           - name: name
@@ -322,6 +346,7 @@ spec:
           operator: in
           values:
             - "true"
+
     - name: deprecated-base-image-check
       params:
         - name: IMAGE_URL
@@ -344,6 +369,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - matrix:
         params:
           - name: image-platform
@@ -371,6 +397,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: ecosystem-cert-preflight-checks
       params:
         - name: image-url
@@ -391,6 +418,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: sast-snyk-check
       params:
         - name: image-digest
@@ -417,6 +445,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: clamav-scan
       matrix:
         params:
@@ -444,6 +473,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: sast-coverity-check
       params:
         - name: image-url
@@ -493,6 +523,7 @@ spec:
           operator: in
           values:
             - success
+
     - name: coverity-availability-check
       runAfter:
         - build-image-index
@@ -510,6 +541,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: sast-shell-check
       params:
         - name: image-digest
@@ -536,6 +568,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: sast-unicode-check
       params:
         - name: image-digest
@@ -562,6 +595,7 @@ spec:
           operator: in
           values:
             - "false"
+
     - name: apply-tags
       params:
         - name: IMAGE_URL
@@ -581,6 +615,7 @@ spec:
           - name: kind
             value: task
         resolver: bundles
+
     - name: push-dockerfile
       params:
         - name: IMAGE
@@ -604,6 +639,7 @@ spec:
           - name: kind
             value: task
         resolver: bundles
+
     - name: rpms-signature-scan
       params:
         - name: image-url
@@ -626,6 +662,7 @@ spec:
           operator: in
           values:
             - "false"
+
   finally:
     - name: show-sbom
       params:
