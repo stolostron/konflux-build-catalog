@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up dependencies
         run: |
@@ -43,6 +45,10 @@ jobs:
         id: update_bundles
         run: |
           bash ./update-tekton-task-bundles.sh pipelines/${{ matrix.pipeline_file }} > migration_data.json
+
+      - name: Update local task references
+        run: |
+          ./build/update-task-refs.sh pipelines/${{ matrix.pipeline_file }}
 
       - name: Check if migration is required
         id: check_migration
