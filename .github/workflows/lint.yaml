@@ -21,6 +21,7 @@ jobs:
 
       - name: Generate tasks
         run: |
+          ./build/validate-tasks.sh
           ./build/generate-tasks.sh
           git diff --exit-code
 
