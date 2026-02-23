@@ -6,15 +6,27 @@ on:
     - cron: "0 0 * * 0" # Runs weekly on Sunday at 00:00 UTC
 
 jobs:
+  generate-matrix:
+    name: Generate pipeline matrix
+    runs-on: ubuntu-latest
+    outputs:
+      pipeline_files: ${{ steps.generate-matrix.outputs.pipeline_files }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch pipeline filenames
+        id: generate-matrix
+        run: |
+          files=$(find pipelines/ -not -type l -type f -exec basename {} +)
+          echo "pipeline_files=$(printf "%s" "$files" | jq -Rs 'split("\n")')" >>"${GITHUB_OUTPUT}"
+
   update-tekton-task-bundles:
+    needs: generate-matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        pipeline_file:
-          - common.yaml
-          - common-base.yaml
-          - common-fbc.yaml
-          - common-oci-ta.yaml
+        pipeline_file: ${{ fromJson(needs.generate-matrix.outputs.pipeline_files) }}
       fail-fast: false
     steps:
       - name: Checkout repository
