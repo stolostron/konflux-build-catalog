@@ -100,18 +100,7 @@ docker run -it konflux-build-catalog:test /bin/bash
 ## Important Rules
 
 ### Pipeline File Management
-**CRITICAL**: When adding or changing any file in the `pipelines/` directory, you MUST update the `pipeline_file` matrix list in `.github/workflows/update-tekton-task-bundles.yaml` to include the new/changed pipeline file. This ensures the automated bundle update process covers all pipeline files.
-
-Example: If you add `pipelines/new-pipeline.yaml`, update the workflow matrix:
-```yaml
-strategy:
-  matrix:
-    pipeline_file:
-      - common.yaml
-      - common-fbc.yaml
-      - common-oci-ta.yaml
-      - new-pipeline.yaml  # Add new files here
-```
+The `pipeline_file` matrix in `.github/workflows/update-tekton-task-bundles.yaml` is dynamically generated from the `pipelines/` directory (excluding symlinks). New pipeline files are automatically picked up by the workflow without manual matrix updates.
 
 ### Tekton Configuration Synchronization
 **CRITICAL**: Files in `.tekton/` directory are linked to specific pipeline files through the `pipelinesascode.tekton.dev/on-cel-expression` annotation. When adding, renaming, or modifying pipeline files, you MUST ensure the corresponding `.tekton` files reference the correct pipeline file paths.
