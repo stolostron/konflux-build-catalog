@@ -112,6 +112,7 @@ spec:
         echo -n "${product}" >"$(step.results.product.path)"
         echo -n "${branch}-${version}" >"$(step.results.branch.path)"
         echo -n "release-${product}-${parsed_version}" >"$(step.results.konflux-application.path)"
+        echo -n "false" >"$(step.results.skip-metadata-fetch.path)"
     - name: parse-product-metadata
       displayName: Clone bundle repository and parse product metadata
       env:
