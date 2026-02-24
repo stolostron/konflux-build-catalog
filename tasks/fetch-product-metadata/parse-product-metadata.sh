@@ -48,8 +48,10 @@ ga_image_name=$(
     | select(.["konflux-component-name"] == "'"${COMPONENT}"'")
     | .["publish-name"] // ""' "${config_path}"
 )
+rhel_version=$(echo "${ga_image_name}" | sed -E 's/.*-rh(el[0-9]+)-.*/\1/')
 echo "  GA image namespace: '${ga_image_namespace}'"
 echo "  GA image name: '${ga_image_name}'"
+echo "  RHEL version: '${rhel_version}'"
 if [[ -z ${ga_image_namespace} ]] || [[ -z ${ga_image_name} ]]; then
   echo "error: failed to parse GA image namespace or name from ${config_path}" >&2
   exit 1
@@ -60,7 +62,7 @@ if [[ ${PRODUCT} == "mce" ]]; then
 fi
 
 # Write results for task result files
-cpe="cpe:/a:redhat:${PRODUCT}:${BRANCH#*-}::${ga_image_name##*-rh}"
+cpe="cpe:/a:redhat:${PRODUCT}:${BRANCH#*-}::${rhel_version}"
 name="${ga_image_namespace}/${ga_image_name}"
 version="v${z_stream_version}"
 
