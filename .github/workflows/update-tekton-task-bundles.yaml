@@ -18,7 +18,7 @@ jobs:
       - name: Fetch pipeline filenames
         id: generate-matrix
         run: |
-          files=$(find pipelines/ -not -type l -type f -exec basename {} +)
+          files=$(find pipelines/ -not -type l -type f -exec basename {} \;)
           echo "pipeline_files=$(printf "%s" "$files" | jq -Rs 'split("\n")')" >>"${GITHUB_OUTPUT}"
 
   update-tekton-task-bundles:
