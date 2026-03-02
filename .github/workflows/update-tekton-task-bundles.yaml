@@ -19,7 +19,9 @@ jobs:
         id: generate-matrix
         run: |
           files=$(find pipelines/ -not -type l -type f -exec basename {} \;)
-          echo "pipeline_files=$(printf "%s" "$files" | jq -Rs 'split("\n")')" >>"${GITHUB_OUTPUT}"
+          pipeline_files=$(printf "%s" "${files}" | jq -Rsc 'split("\n")')
+          echo "* Found pipeline files: ${pipeline_files}"
+          echo "pipeline_files=${pipeline_files}" >>"${GITHUB_OUTPUT}"
 
   update-tekton-task-bundles:
     needs: generate-matrix
