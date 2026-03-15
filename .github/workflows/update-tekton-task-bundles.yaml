@@ -277,7 +277,7 @@ jobs:
           spec:
             # Reference the agent that will execute tasks created from this template
             agentRef:
-              name: fast
+              name: acm
             # Contexts that will be merged with task-specific contexts
             contexts:
               - name: bot-instructions
