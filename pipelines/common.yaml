@@ -86,9 +86,6 @@ spec:
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
       type: array
-    - default: "false"
-      description: Enable in-development package managers, such as pre-fetch rpm packages defined in RPM lockfiles.
-      name: use-dev-package-managers
     - default: "true"
       description: Check symlinks in the repo. If they're pointing outside of the repo, the build will fail.
       name: enable-symlink-check
