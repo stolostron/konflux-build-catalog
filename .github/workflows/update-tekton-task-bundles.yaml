@@ -318,26 +318,56 @@ jobs:
 
                   Group all migrations by `packageFile` to minimize the number of file edits.
 
-                  ### Step 3: Check MIGRATION.md and Apply Migration Steps
-                  For each task bundle, check if there are breaking changes by fetching:
+                  ### Step 3: Install Pipeline Migration Tool
+                  The agent environment has `pipx` pre-installed. Install the Konflux pipeline-migration-tool (`pmt`):
+                  ```bash
+                  pipx install git+https://github.com/konflux-ci/pipeline-migration-tool
                   ```
-                  https://raw.githubusercontent.com/konflux-ci/build-definitions/main/task/<task-name>/<new-version>/MIGRATION.md
+                  Verify installation: `pmt --help`
+
+                  ### Step 4: Apply Migrations (Two Strategies)
+                  For each task bundle upgrade, extract `<task-name>` from `depName` (e.g., `task-buildah-oci-ta` from `quay.io/konflux-ci/tekton-catalog/task-buildah-oci-ta`).
+
+                  **Strategy A: Use `pmt migrate` (preferred)**
+
+                  First, try the official pipeline-migration-tool. Build a JSON array matching the Renovate upgrade format and run `pmt migrate`:
+                  ```bash
+                  # Build upgrade JSON for all issues targeting this pipeline file
+                  UPGRADE_JSON='[{"depName":"<depName>","currentValue":"<currentValue>","newValue":"<newValue>","currentDigest":"<currentDigest>","newDigest":"<newDigest>","packageFile":"<packageFile>","parentDir":"pipelines","depTypes":["tekton-bundle"]}]'
+
+                  pmt migrate -u "$UPGRADE_JSON" -p "<packageFile>"
                   ```
 
-                  Extract `<task-name>` from `depName` (e.g., `task-buildah-oci-ta` from `quay.io/konflux-ci/tekton-catalog/task-buildah-oci-ta`).
+                  `pmt migrate` will:
+                  - Query the OCI registry to discover migration scripts attached to the task bundle
+                  - Automatically download and execute them against the pipeline file
+                  - Update the bundle reference (version + digest) in the pipeline YAML
 
-                  - If MIGRATION.md says "no action needed" → proceed with simple version+digest update
-                  - If MIGRATION.md has breaking changes → **read the migration steps carefully and apply ALL described changes** to the pipeline YAML file:
-                    * **Remove deprecated parameters**: find and delete the param entries (both the parameter definition and any `value` references) from the task's `params` list in the pipeline YAML
-                    * **Remove deprecated results**: find and delete any references to removed results in subsequent tasks (e.g., `$(tasks.<task>.results.<result>)`)
-                    * **Rename parameters/results**: if the migration guide says a parameter or result was renamed, update all references accordingly
-                    * **Add new required parameters**: if the migration guide specifies new required parameters with default or recommended values, add them to the task's `params` list
-                    * **Apply any other changes** described in the migration guide
-                    After applying all migration steps, proceed with the version+digest update as normal.
-                    Track which migration actions were applied for each task — this information will be included in the PR body.
-                  - **Only skip** if the migration steps are truly ambiguous or require information not available to you (e.g., a new required parameter with no documented default value and no way to determine the correct value). Add skipped issues to the skipped list with a reason.
+                  If `pmt migrate` succeeds, record the migration method as "pmt migrate (automated script)" for the PR body.
 
-                  ### Step 4: Create One PR Per Pipeline File
+                  **Strategy B: Fallback to MIGRATION.md (manual)**
+
+                  If `pmt migrate` fails (e.g., no migration scripts attached to the bundle, or the tool errors out), fall back to the manual approach:
+
+                  1. Fetch the MIGRATION.md:
+                     ```
+                     https://raw.githubusercontent.com/konflux-ci/build-definitions/main/task/<task-name>/<new-version>/MIGRATION.md
+                     ```
+
+                  2. If MIGRATION.md says "no action needed" → proceed with simple version+digest update
+                  3. If MIGRATION.md has breaking changes → **read the migration steps carefully and apply ALL described changes** to the pipeline YAML file:
+                     * **Remove deprecated parameters**: find and delete the param entries (both the parameter definition and any `value` references) from the task's `params` list in the pipeline YAML
+                     * **Remove deprecated results**: find and delete any references to removed results in subsequent tasks (e.g., `$(tasks.<task>.results.<result>)`)
+                     * **Rename parameters/results**: if the migration guide says a parameter or result was renamed, update all references accordingly
+                     * **Add new required parameters**: if the migration guide specifies new required parameters with default or recommended values, add them to the task's `params` list
+                     * **Apply any other changes** described in the migration guide
+
+                  After applying all migration steps (via either strategy), proceed with the version+digest update as normal.
+                  Track which migration method and actions were applied for each task — this information will be included in the PR body.
+
+                  - **Only skip** if both `pmt migrate` fails AND the MIGRATION.md steps are truly ambiguous or require information not available to you. Add skipped issues to the skipped list with a reason.
+
+                  ### Step 5: Create One PR Per Pipeline File
                   Due to CI requirements, each pipeline file MUST have its own separate PR.
 
                   For each `packageFile` group (from Step 2), perform these operations:
@@ -384,9 +414,10 @@ jobs:
 
                   ## Migration Steps Applied
                   _(Include this section only if breaking changes were handled)_
-                  | Task | Migration Action |
-                  |------|-----------------|
-                  | <task1> | <description of migration actions applied, e.g. "Removed deprecated params: image-url, rebuild, skip-checks. Removed result: build"> |
+                  | Task | Method | Migration Action |
+                  |------|--------|-----------------|
+                  | <task1> | pmt migrate | Automated migration script applied |
+                  | <task2> | MIGRATION.md | Removed deprecated params: image-url, rebuild. Removed result: build |
                   ...
 
                   EOF
@@ -402,7 +433,7 @@ jobs:
                   - Issues affecting the same file should be grouped into one PR for that file
                   - Track all created PR URLs for the Slack notification
 
-                  ### Step 5: Send Slack Notification
+                  ### Step 6: Send Slack Notification
 
                   **Success (all PRs created):**
                   ```bash
@@ -436,7 +467,7 @@ jobs:
                   1. Create ONE PR per pipeline file (not one PR for all changes)
                   2. Group issues by `packageFile` - all issues for the same file go into one PR
                   3. Use the exact `newDigest` value from each issue's JSON - do not compute or fetch digests
-                  4. If MIGRATION.md has breaking changes, read the migration guide and apply all described changes to the pipeline YAML (remove deprecated params, remove result references, rename fields, add new params, etc.). Only skip if the migration steps are truly ambiguous or require information not available to you.
+                  4. Always try `pmt migrate` first for each task bundle upgrade. Only fall back to reading MIGRATION.md manually if `pmt migrate` fails or reports no migration scripts available.
                   5. Always use "Fixes #xxx" in PR body to auto-close issues
                   6. If no issues can be processed, do NOT create any PRs
               - name: konflux-build-catalog
