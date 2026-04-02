@@ -143,6 +143,10 @@ spec:
       name: idms-path
       type: string
     - default: "false"
+      description: Whether to skip FIPS checks
+      name: skip-fips-check
+      type: string
+    - default: "false"
       description: Whether to send slack notification when the pipeline run failed
       name: send-slack-notification
       type: string
@@ -515,7 +519,11 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
+        - input: $(params.skip-fips-check)
+          operator: in
+          values:
+            - 'false'
   workspaces:
     - name: git-auth
       optional: true
