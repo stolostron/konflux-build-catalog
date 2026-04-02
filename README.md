@@ -206,6 +206,27 @@ yq eval pipelines/common.yaml > /dev/null
 for file in pipelines/*.yaml; do yq eval "$file" > /dev/null && echo "$file: OK"; done
 ```
 
+### Sync Upstream Pipelines
+
+```bash
+# Sync all pipelines from konflux-ci/build-definitions
+python3 sync_upstream_pipeline.py
+
+# Sync a specific pipeline file
+python3 sync_upstream_pipeline.py pipelines/common.yaml
+
+# Dry-run to preview changes without writing
+python3 sync_upstream_pipeline.py --dry-run
+```
+
+The [`sync_upstream_pipeline.py`](./sync_upstream_pipeline.py) script synchronizes local pipeline files with their upstream counterparts from [konflux-ci/build-definitions](https://github.com/konflux-ci/build-definitions) while preserving local customizations. It's configured using the [`upstream-map.yaml`](./upstream-map.yaml).
+
+**Exit codes:**
+
+- `0` - No changes detected
+- `200` - At least one pipeline file was updated
+- `1` - Error occurred (e.g., missing mapped file)
+
 ## Important Rules
 
 ### Pipeline File Management

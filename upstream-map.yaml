@@ -1,0 +1,13 @@
+pipelines:
+  docker-build-multi-platform-oci-ta:
+    - common.yaml
+    - common-base.yaml
+    - common-stage.yaml
+  docker-build-oci-ta:
+    - common-oci-ta.yaml
+  fbc-builder:
+    - common-fbc.yaml
+    - common-fbc-nofips.yaml
+custom-tasks:
+  - fetch-product-metadata
+  - slack-webhook-notification
