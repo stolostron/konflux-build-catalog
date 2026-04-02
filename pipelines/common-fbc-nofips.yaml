@@ -10,19 +10,6 @@ spec:
     _Uses `buildah` to create a container image. Its build-time tests are limited to verifying the included catalog and do not scan the image.
     This pipeline is pushed as a Tekton bundle to [quay.io](https://quay.io/repository/konflux-ci/tekton-catalog/pipeline-fbc-builder?tab=tags)_
   finally:
-    - name: show-sbom
-      params:
-        - name: IMAGE_URL
-          value: $(tasks.build-image-index.results.IMAGE_URL)
-      taskRef:
-        params:
-          - name: name
-            value: show-sbom
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-show-sbom:0.1@sha256:04994df487ee886adbe60a8a5866647fbdfd53cc26f7b2554272ba51bf7af29e
-          - name: kind
-            value: task
-        resolver: bundles
     - name: slack-webhook-notification
       params:
         - name: message
@@ -70,25 +57,13 @@ spec:
     - description: Fully Qualified Output Image
       name: output-image
       type: string
-    - default: []
-      description: Additional tags to add to the image
-      name: additional-tags
-      type: array
     - default: .
-      description:
-        Path to the source code of an application's component from where
-        to build image.
+      description: Path to the source code of an application's component from where to build image.
       name: path-context
       type: string
     - default: Dockerfile
-      description:
-        Path to the Dockerfile inside the context specified by parameter
-        path-context
+      description: Path to the Dockerfile inside the context specified by parameter path-context
       name: dockerfile
-      type: string
-    - default: "false"
-      description: Force rebuild image
-      name: rebuild
       type: string
     - default: "false"
       description: Skip checks against built image
@@ -99,22 +74,20 @@ spec:
       name: hermetic
       type: string
     - default: ""
-      description: Build dependencies to be prefetched by Cachi2
+      description: Build dependencies to be prefetched
       name: prefetch-input
       type: string
     - default: ""
-      description:
-        Image tag expiration time, time values could be something like
-        1h, 2d, 3w for hours, days, and weeks, respectively.
+      description: Image tag expiration time, time values could be something like 1h, 2d, 3w for hours, days, and weeks, respectively.
       name: image-expires-after
-      type: string
-    - default: "true"
-      description: Build a source image.
-      name: build-source-image
       type: string
     - default: "true"
       description: Add built image into an OCI image index
       name: build-image-index
+      type: string
+    - name: enable-cache-proxy
+      default: "false"
+      description: Enable cache proxy configuration
       type: string
     - default: []
       description: Array of --build-arg values ("arg=value" strings) for buildah
@@ -126,10 +99,12 @@ spec:
       type: string
     - default:
         - linux/x86_64
-      description:
-        List of platforms to build the container images on. The available
-        set of values is determined by the configuration of the multi-platform-controller.
+      description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
+      type: array
+    - default: []
+      description: Additional tags to add to the image
+      name: additional-tags
       type: array
     - default: []
       description: An array of arguments passed to opm when executed.
@@ -147,7 +122,7 @@ spec:
       description: Whether to send slack notification when the pipeline run failed
       name: send-slack-notification
       type: string
-    - default: "" # Need to change for each release, empty for non-release
+    - default: ""
       name: konflux-application-name
       description: The name of the application in Konflux, this is required when send-slack-notification is true
       type: string
@@ -177,10 +152,6 @@ spec:
       name: slack-group-id
       description: |
         The group id of the slack user group, if this is set will mention the group in the slack message; this id can be found by viewing the user group details. e.g. S07XXXXXXXX
-    - name: enable-cache-proxy
-      default: "false"
-      description: Enable cache proxy configuration
-      type: string
   results:
     - description: ""
       name: IMAGE_URL
@@ -310,12 +281,18 @@ spec:
             - $(params.build-args[*])
         - name: BUILD_ARGS_FILE
           value: $(params.build-args-file)
+        - name: SOURCE_URL
+          value: $(tasks.clone-repository.results.url)
+        - name: HTTP_PROXY
+          value: $(tasks.init.results.http-proxy)
+        - name: NO_PROXY
+          value: $(tasks.init.results.no-proxy)
         - name: SOURCE_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
         - name: CACHI2_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
         - name: IMAGE_APPEND_PLATFORM
-          value: "true"
+          value: 'true'
       runAfter:
         - clone-repository
       taskRef:
@@ -351,59 +328,6 @@ spec:
           - name: kind
             value: task
         resolver: bundles
-    - name: build-source-image
-      params:
-        - name: BINARY_IMAGE
-          value: $(tasks.build-image-index.results.IMAGE_URL)
-        - name: BINARY_IMAGE_DIGEST
-          value: $(tasks.build-image-index.results.IMAGE_DIGEST)
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-        - name: CACHI2_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
-      runAfter:
-        - build-image-index
-      taskRef:
-        params:
-          - name: name
-            value: source-build-oci-ta
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-source-build-oci-ta:0.3@sha256:362f0475df00e7dfb5f15dea0481d1b68b287f60411718d70a23da3c059a5613
-          - name: kind
-            value: task
-        resolver: bundles
-      when:
-        - input: $(params.build-source-image)
-          operator: in
-          values:
-            - "true"
-    - matrix:
-        params:
-          - name: image-platform
-            value:
-              - $(params.build-platforms)
-      name: clair-scan
-      params:
-        - name: image-digest
-          value: $(tasks.build-image-index.results.IMAGE_DIGEST)
-        - name: image-url
-          value: $(tasks.build-image-index.results.IMAGE_URL)
-      runAfter:
-        - build-image-index
-      taskRef:
-        params:
-          - name: name
-            value: clair-scan
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.3.2@sha256:3fa03be0280f33d7070ea53f26d53e727199737a7a2b9a59a95071ae40a999ac
-          - name: kind
-            value: task
-        resolver: bundles
-      when:
-        - input: $(params.skip-checks)
-          operator: in
-          values:
-            - "false"
     - name: deprecated-base-image-check
       params:
         - name: IMAGE_URL
@@ -425,7 +349,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: apply-tags
       params:
         - name: IMAGE_URL
@@ -466,7 +390,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: fbc-target-index-pruning-check
       params:
         - name: IMAGE_URL
