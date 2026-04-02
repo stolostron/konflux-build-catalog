@@ -12,6 +12,19 @@ spec:
     - description: Source Repository URL
       name: git-url
       type: string
+    - default: "1"
+      name: depth
+      description: Perform a shallow clone, fetching only the most recent
+        N commits.
+      type: string
+    - default: "false"
+      name: fetchTags
+      description: Fetch all tags for the repo.
+      type: string
+    - default: ""
+      name: refspec
+      description: Refspec to fetch before checking out revision.
+      type: string
     - default: ""
       description: Revision of the Source Repository
       name: revision
@@ -161,6 +174,12 @@ spec:
       params:
         - name: url
           value: $(params.git-url)
+        - name: depth
+          value: $(params.depth)
+        - name: fetchTags
+          value: $(params.fetchTags)
+        - name: refspec
+          value: $(params.refspec)
         - name: revision
           value: $(params.revision)
         - name: ociStorage
