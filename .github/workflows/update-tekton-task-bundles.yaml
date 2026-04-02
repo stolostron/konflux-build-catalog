@@ -52,6 +52,24 @@ jobs:
         run: |
           ./build/update-task-refs.sh pipelines/${{ matrix.pipeline_file }}
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+
+      - name: Sync pipeline config with upstream
+        id: sync_upstream
+        run: |
+          pip install -r requirements.txt
+          python sync_upstream_pipeline.py pipelines/${{ matrix.pipeline_file }} ||
+            exit_code=$?
+          if [[ "${exit_code}" == 200 ]]; then
+            echo "new_configuration=true" >> $GITHUB_OUTPUT
+          else
+            exit "${exit_code}"
+          fi
+
       - name: Check if migration is required
         id: check_migration
         run: |
@@ -90,7 +108,7 @@ jobs:
           fi
 
       - name: Extract pipeline filename without extension
-        if: steps.check_migration.outputs.migration_required == 'true'
+        if: steps.check_migration.outputs.migration_required == 'true' || steps.sync_upstream.outputs.new_configuration == 'true'
         id: extract_filename
         run: |
           filename="${{ matrix.pipeline_file }}"
@@ -100,7 +118,7 @@ jobs:
           echo "filename_label=${filename_label}" >> $GITHUB_OUTPUT
 
       - name: Check for existing migration issue
-        if: steps.check_migration.outputs.migration_required == 'true'
+        if: steps.check_migration.outputs.migration_required == 'true' || steps.sync_upstream.outputs.new_configuration == 'true'
         id: check_existing_issue
         env:
           GH_TOKEN: ${{ github.token }}
@@ -124,12 +142,12 @@ jobs:
           fi
 
       - name: Create issue for migration
-        if: steps.check_migration.outputs.migration_required == 'true' && steps.check_existing_issue.outputs.issue_exists == 'false'
+        if: (steps.check_migration.outputs.migration_required == 'true' || steps.sync_upstream.outputs.new_configuration == 'true') && steps.check_existing_issue.outputs.issue_exists == 'false'
         uses: imjohnbo/issue-bot@v3
         with:
           token: ${{ github.token }}
           title: "Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }} - ${{ github.run_id }}"
-          body: ${{ steps.check_migration.outputs.issue_body }}
+          body: ${{ steps.check_migration.outputs.issue_body || 'New configuration detected for ${{ matrix.pipeline_file }} requiring manual review' }}
           labels: "migration, ${{ steps.extract_filename.outputs.filename_label }}"
           assignees: ${{ github.actor }}
 
