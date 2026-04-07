@@ -10,6 +10,10 @@ merged_migration_data.json
 *.swo
 *~
 
+# Python
+__pycache__/
+.venv/
+
 # OS generated files
 .DS_Store
 .DS_Store?

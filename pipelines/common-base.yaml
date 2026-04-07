@@ -12,19 +12,6 @@ spec:
     - description: Source Repository URL
       name: git-url
       type: string
-    - default: "1"
-      name: depth
-      description: Perform a shallow clone, fetching only the most recent
-        N commits.
-      type: string
-    - default: "false"
-      name: fetchTags
-      description: Fetch all tags for the repo.
-      type: string
-    - default: ""
-      name: refspec
-      description: Refspec to fetch before checking out revision.
-      type: string
     - default: ""
       description: Revision of the Source Repository
       name: revision
@@ -32,10 +19,6 @@ spec:
     - description: Fully Qualified Output Image
       name: output-image
       type: string
-    - default: []
-      description: Additional tags to add to the image
-      name: additional-tags
-      type: array
     - default: .
       description: Path to the source code of an application's component from where to build image.
       name: path-context
@@ -43,10 +26,6 @@ spec:
     - default: Dockerfile
       description: Path to the Dockerfile inside the context specified by parameter path-context
       name: dockerfile
-      type: string
-    - default: "false"
-      description: Force rebuild image
-      name: rebuild
       type: string
     - default: "false"
       description: Skip checks against built image
@@ -57,7 +36,7 @@ spec:
       name: hermetic
       type: string
     - default: ""
-      description: Build dependencies to be prefetched by Cachi2
+      description: Build dependencies to be prefetched
       name: prefetch-input
       type: string
     - default: ""
@@ -72,6 +51,14 @@ spec:
       description: Add built image into an OCI image index
       name: build-image-index
       type: string
+    - name: buildah-format
+      default: docker
+      type: string
+      description: The format for the resulting image's mediaType. Valid values are oci or docker.
+    - name: enable-cache-proxy
+      default: 'false'
+      description: Enable cache proxy configuration
+      type: string
     - default: []
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
@@ -81,7 +68,7 @@ spec:
       name: build-args-file
       type: string
     - default: 'false'
-      description: 'Whether to enable privileged mode, should be used only with remote VMs'
+      description: Whether to enable privileged mode, should be used only with remote VMs
       name: privileged-nested
       type: string
     - default:
@@ -92,6 +79,22 @@ spec:
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
       type: array
+    - default: "1"
+      name: depth
+      description: Perform a shallow clone, fetching only the most recent N commits.
+      type: string
+    - default: "false"
+      name: fetchTags
+      description: Fetch all tags for the repo.
+      type: string
+    - default: ""
+      name: refspec
+      description: Refspec to fetch before checking out revision.
+      type: string
+    - default: []
+      description: Additional tags to add to the image
+      name: additional-tags
+      type: array
     - default: 'true'
       description: Check symlinks in the repo. If they're pointing outside of the repo, the build will fail.
       name: enable-symlink-check
@@ -100,7 +103,7 @@ spec:
       description: Whether to send slack notification when the pipeline run failed
       name: send-slack-notification
       type: string
-    - default: "" # Need to change for each release, empty for non-release
+    - default: ""
       name: konflux-application-name
       description: The name of the application in Konflux, this is required when send-slack-notification is true
       type: string
@@ -130,14 +133,6 @@ spec:
       name: slack-group-id
       description: |
         The group id of the slack user group, if this is set will mention the group in the slack message; this id can be found by viewing the user group details. e.g. S07XXXXXXXX
-    - name: buildah-format
-      default: docker
-      type: string
-      description: The format for the resulting image's mediaType. Valid values are oci or docker.
-    - name: enable-cache-proxy
-      default: 'false'
-      description: Enable cache proxy configuration
-      type: string
   results:
     - description: ""
       name: IMAGE_URL
@@ -174,18 +169,18 @@ spec:
       params:
         - name: url
           value: $(params.git-url)
-        - name: depth
-          value: $(params.depth)
-        - name: fetchTags
-          value: $(params.fetchTags)
-        - name: refspec
-          value: $(params.refspec)
         - name: revision
           value: $(params.revision)
         - name: ociStorage
           value: $(params.output-image).git
         - name: ociArtifactExpiresAfter
           value: $(params.image-expires-after)
+        - name: depth
+          value: $(params.depth)
+        - name: fetchTags
+          value: $(params.fetchTags)
+        - name: refspec
+          value: $(params.refspec)
         - name: enableSymlinkCheck
           value: $(params.enable-symlink-check)
       runAfter:
@@ -256,14 +251,20 @@ spec:
           value: $(params.build-args-file)
         - name: PRIVILEGED_NESTED
           value: $(params.privileged-nested)
+        - name: SOURCE_URL
+          value: $(tasks.clone-repository.results.url)
+        - name: BUILDAH_FORMAT
+          value: $(params.buildah-format)
+        - name: HTTP_PROXY
+          value: $(tasks.init.results.http-proxy)
+        - name: NO_PROXY
+          value: $(tasks.init.results.no-proxy)
         - name: SOURCE_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
         - name: CACHI2_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
         - name: IMAGE_APPEND_PLATFORM
-          value: "true"
-        - name: BUILDAH_FORMAT
-          value: $(params.buildah-format)
+          value: 'true'
       runAfter:
         - prefetch-dependencies
       taskRef:
@@ -326,7 +327,7 @@ spec:
         - input: $(params.build-source-image)
           operator: in
           values:
-            - "true"
+            - 'true'
     - name: deprecated-base-image-check
       params:
         - name: IMAGE_URL
@@ -348,7 +349,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - matrix:
         params:
           - name: image-platform
@@ -375,8 +376,13 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
-    - name: ecosystem-cert-preflight-checks
+            - 'false'
+    - matrix:
+        params:
+          - name: platform
+            value:
+              - $(params.build-platforms)
+      name: ecosystem-cert-preflight-checks
       params:
         - name: image-url
           value: $(tasks.build-image-index.results.IMAGE_URL)
@@ -395,7 +401,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: sast-snyk-check
       params:
         - name: image-digest
@@ -421,13 +427,13 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
-    - name: clamav-scan
-      matrix:
+            - 'false'
+    - matrix:
         params:
           - name: image-arch
             value:
               - $(params.build-platforms)
+      name: clamav-scan
       params:
         - name: image-digest
           value: $(tasks.build-image-index.results.IMAGE_DIGEST)
@@ -448,13 +454,13 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: sast-coverity-check
       params:
-        - name: image-url
-          value: $(tasks.build-image-index.results.IMAGE_URL)
         - name: image-digest
           value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        - name: image-url
+          value: $(tasks.build-image-index.results.IMAGE_URL)
         - name: IMAGE
           value: $(params.output-image)
         - name: DOCKERFILE
@@ -493,7 +499,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
         - input: $(tasks.coverity-availability-check.results.STATUS)
           operator: in
           values:
@@ -514,7 +520,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: sast-shell-check
       params:
         - name: image-digest
@@ -540,7 +546,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: sast-unicode-check
       params:
         - name: image-digest
@@ -566,7 +572,7 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
     - name: apply-tags
       params:
         - name: IMAGE_URL
@@ -630,21 +636,8 @@ spec:
         - input: $(params.skip-checks)
           operator: in
           values:
-            - "false"
+            - 'false'
   finally:
-    - name: show-sbom
-      params:
-        - name: IMAGE_URL
-          value: $(tasks.build-image-index.results.IMAGE_URL)
-      taskRef:
-        params:
-          - name: name
-            value: show-sbom
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-show-sbom:0.1@sha256:04994df487ee886adbe60a8a5866647fbdfd53cc26f7b2554272ba51bf7af29e
-          - name: kind
-            value: task
-        resolver: bundles
     - name: slack-webhook-notification
       params:
         - name: message
