@@ -7,7 +7,6 @@ pipelines:
     - common-oci-ta.yaml
   fbc-builder:
     - common-fbc.yaml
-    - common-fbc-nofips.yaml
 custom-tasks:
   - fetch-product-metadata
   - slack-webhook-notification

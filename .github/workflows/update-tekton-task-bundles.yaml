@@ -65,8 +65,10 @@ jobs:
           python sync_upstream_pipeline.py pipelines/${{ matrix.pipeline_file }} ||
             exit_code=$?
           if [[ "${exit_code}" == 200 ]]; then
+            echo "INFO: New configuration detected for ${{ matrix.pipeline_file }}"
             echo "new_configuration=true" >> $GITHUB_OUTPUT
           else
+            echo "INFO: No new configuration detected for ${{ matrix.pipeline_file }}. Exiting with code ${exit_code}."
             exit "${exit_code}"
           fi
 

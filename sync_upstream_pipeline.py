@@ -499,11 +499,11 @@ def main() -> None:
         upstream_doc = fetch_upstream(upstream_name)
         for rel in rel_files:
             path = pipelines_dir / rel
-            if not path.is_file():
-                print(f"  skip missing file: {path}", file=sys.stderr)
-                exit_code = 1
-                continue
             if args.pipeline_file and path != repo_root / args.pipeline_file:
+                continue
+            if not path.is_file():
+                print(f"  ERROR: missing mapped file: {path}", file=sys.stderr)
+                exit_code = 1
                 continue
             original_text = path.read_text(encoding="utf-8")
             local_rt = yaml_rt.load(original_text)
