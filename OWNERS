@@ -1,17 +1,15 @@
 approvers:
-- zhujian7
-- elgnay
-- xuezhaojun
 - clyang82
-- jnpacker
-- dislbenn
 - dhaiducek
+- dislbenn
+- elgnay
+- gparvin
+- jnpacker
 
 reviewers:
-- zhujian7
-- elgnay
-- xuezhaojun
 - clyang82
-- jnpacker
-- dislbenn
 - dhaiducek
+- dislbenn
+- elgnay
+- gparvin
+- jnpacker
