@@ -62,6 +62,7 @@ jobs:
         id: sync_upstream
         run: |
           pip install -r requirements.txt
+          exit_code=0
           python sync_upstream_pipeline.py pipelines/${{ matrix.pipeline_file }} ||
             exit_code=$?
           if [[ "${exit_code}" == 200 ]]; then
