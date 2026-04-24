@@ -157,6 +157,8 @@ jobs:
         if: steps.check_migration.outputs.migration_required == 'true' && steps.check_existing_issue.outputs.issue_exists == 'false'
         uses: slackapi/slack-github-action@v3.0.2
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚨 Tekton Task Bundle Migration Required - ${{ matrix.pipeline_file }}",
@@ -211,8 +213,6 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Fail if migration is required
         run: |
