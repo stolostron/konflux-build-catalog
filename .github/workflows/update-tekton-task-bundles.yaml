@@ -279,11 +279,16 @@ jobs:
           KUBEOPENCODE_TOKEN: ${{ secrets.KUBEOPENCODE_TOKEN }}
           KUBEOPENCODE_CA: ${{ secrets.KUBEOPENCODE_CA }}
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable-1.35.txt)/bin/linux/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable-1.34.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
           echo "${KUBEOPENCODE_CA}" > /tmp/kubeopencode-ca.crt
+
+          kubectl version \
+            --server="${KUBEOPENCODE_CLUSTER_URL}" \
+            --token="${KUBEOPENCODE_TOKEN}" \
+            --certificate-authority=/tmp/kubeopencode-ca.crt
 
           cat <<'EOF' | kubectl \
             --server="${KUBEOPENCODE_CLUSTER_URL}" \
