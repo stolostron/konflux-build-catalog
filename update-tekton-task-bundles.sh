@@ -13,6 +13,11 @@ else
   SED_INPLACE=(-i)
 fi
 
+if [[ -z "$*" ]]; then
+    echo "error: at least one pipeline file is required" >&2
+    exit 1
+fi
+
 FILES=( "$@" )
 
 # Find existing image references
