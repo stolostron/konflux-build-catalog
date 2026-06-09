@@ -23,6 +23,51 @@ jobs:
           echo "* Found pipeline files: ${pipeline_files}"
           echo "pipeline_files=${pipeline_files}" >>"${GITHUB_OUTPUT}"
 
+  update-task-base-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo jq
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update task base image
+        run: |
+          ./build/update-task-base-image.sh
+
+      - name: Check if pipeline file changed
+        id: check_diff
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          if git diff --quiet tasks/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request if needed
+        if: steps.check_diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore: update Tekton Task base images"
+          title: "chore: update Tekton Task base images"
+          body: |-
+            Automated PR to update Tekton Task base images.
+          branch: tekton-task-base-image-update
+          base: main
+          add-paths: tasks/
+          signoff: true
+          labels: |
+            automated-update
+
   update-tekton-task-bundles:
     needs: generate-matrix
     runs-on: ubuntu-latest
