@@ -121,6 +121,8 @@ jobs:
       - name: Check if migration is required
         id: check_migration
         run: |
+          echo "assignees=$(yq '.approvers | join(",")' OWNERS)" >> $GITHUB_OUTPUT
+
           if jq -e 'length > 0' migration_data.json; then
             echo "migration_required=true" >> $GITHUB_OUTPUT
 
@@ -208,7 +210,7 @@ jobs:
               format('New configuration detected for `{0}` requiring manual review', matrix.pipeline_file)
             }}
           labels: "migration, ${{ steps.extract_filename.outputs.filename_label }}"
-          assignees: ${{ github.actor }}
+          assignees: ${{ steps.check_migration.outputs.assignees }}
 
       - name: Send Slack notification for migration
         if: steps.check_migration.outputs.migration_required == 'true' &&
