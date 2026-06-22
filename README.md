@@ -186,18 +186,23 @@ Follow this PR to understand how to update your repository: https://github.com/s
 ## Common Commands
 
 ### Update Tekton Task Bundles
+
 ```bash
 # Update all bundle references to latest versions
-bash update-tekton-task-bundles.sh pipelines/common.yaml
+./update-tekton-task-bundles.sh pipelines/common.yaml
 
 # Update multiple pipeline files at once
-bash update-tekton-task-bundles.sh pipelines/common.yaml pipelines/common-fbc.yaml
+./update-tekton-task-bundles.sh pipelines/common.yaml pipelines/common-fbc.yaml
 
 # Update all pipeline files
-bash update-tekton-task-bundles.sh pipelines/*.yaml
+./update-tekton-task-bundles.sh pipelines/*.yaml
+
+# Update all pipeline files with version migrations
+MIGRATE=true ./update-tekton-task-bundles.sh pipelines/*.yaml
 ```
 
 ### Validate Pipeline YAML
+
 ```bash
 # Validate YAML syntax for single file
 yq eval pipelines/common.yaml > /dev/null
