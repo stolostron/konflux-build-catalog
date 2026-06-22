@@ -2,26 +2,24 @@
 # This file defines who needs to review changes to specific files or directories
 
 # Default owners for the entire repository
-* @zhujian7 @xuezhaojun @jnpacker @dhaiducek
+* @jnpacker @dhaiducek @gparvin @dislbenn
 
 # Specific ownership for .tekton pipeline files
 # Each file can be assigned to different maintainers for specialized review
 
-.tekton/common-pipeline-pull-request.yaml @clyang82
-.tekton/common-pipeline-push.yaml @clyang82
-.tekton/common-pipeline-mce-* @zhujian7 @xuezhaojun
-.tekton/common-pipeline-oci-ta-pull-request.yaml @clyang82
-.tekton/common-pipeline-fbc-pull-request.yaml @clyang82
+.tekton/common-pipeline-pull-request.yaml @dhaiducek @gparvin @dislbenn
+.tekton/common-pipeline-push.yaml @dhaiducek @gparvin @dislbenn
+.tekton/common-pipeline-oci-ta-pull-request.yaml @dhaiducek @gparvin @dislbenn
+.tekton/common-pipeline-fbc-pull-request.yaml @dhaiducek @gparvin @dislbenn
 
 # Pipeline source files
-pipelines/common.yaml @clyang82
-pipelines/common_mce_* @zhujian7 @xuezhaojun
-pipelines/common-oci-ta.yaml @clyang82
-pipelines/common-fbc.yaml @clyang82
+pipelines/common.yaml @dhaiducek @gparvin @dislbenn
+pipelines/common-oci-ta.yaml @dhaiducek @gparvin @dislbenn
+pipelines/common-fbc.yaml @dhaiducek @gparvin @dislbenn
 
 # Automation scripts
-update-tekton-task-bundles.sh @xuezhaojun
-.github/workflows/ @xuezhaojun
+update-tekton-task-bundles.sh @dhaiducek @gparvin @dislbenn
+.github/workflows/ @dhaiducek @gparvin @dislbenn
 
 # Mintmaker
-mintmaker/ @dhaiducek
+mintmaker/ @dhaiducek @gparvin @dislbenn
