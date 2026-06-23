@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "0 0 * * 0" # Runs weekly on Sunday at 00:00 UTC
 
+env:
+  # https://github.com/mikefarah/yq/releases/latest/
+  YQ_VERSION: v4.53.3
+
 jobs:
   generate-matrix:
     name: Generate pipeline matrix
@@ -36,7 +40,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y skopeo jq
-          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
       - name: Update task base image
@@ -85,7 +89,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y skopeo jq
-          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.1/yq_linux_amd64
+          sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${{ env.YQ_VERSION }}/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
       - name: Run update-tekton-task-bundles.sh
