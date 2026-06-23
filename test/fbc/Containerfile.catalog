@@ -1,0 +1,22 @@
+ARG CATALOG_VERSION=<missing>
+
+FROM registry.redhat.io/openshift4/ose-operator-registry-rhel9:${CATALOG_VERSION} AS builder
+
+# Copy declarative config root into image at /configs and pre-populate serve cache
+USER root
+COPY ./multicluster-global-hub-operator-rh/ /configs/multicluster-global-hub-operator-rh
+RUN cat /configs/multicluster-global-hub-operator-rh/catalog-current.yaml >> /configs/multicluster-global-hub-operator-rh/catalog.yaml
+RUN rm -f /configs/multicluster-global-hub-operator-rh/catalog-current.yaml
+RUN sed -i -e "s|quay.io/redhat-user-workloads/acm-multicluster-glo-tenant/multicluster-global-hub-operator-bundle-globalhub-1-5|registry.redhat.io/multicluster-globalhub/multicluster-globalhub-operator-bundle|g" /configs/multicluster-global-hub-operator-rh/catalog.yaml
+
+# The base image is expected to contain /bin/opm (with a serve subcommand) and /bin/grpc_health_probe
+FROM registry.redhat.io/openshift4/ose-operator-registry-rhel9:${CATALOG_VERSION}
+
+ENTRYPOINT ["/bin/opm"]
+CMD ["serve", "/configs", "--cache-dir=/tmp/cache"]
+
+COPY --from=builder /configs /configs
+RUN ["/bin/opm", "serve", "/configs", "--cache-dir=/tmp/cache", "--cache-only"]
+
+# Set specific label for the location of the declarative config root directory in the image
+LABEL operators.operatorframework.io.index.configs.v1=/configs
