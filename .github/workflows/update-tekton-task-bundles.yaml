@@ -28,6 +28,7 @@ jobs:
           echo "pipeline_files=${pipeline_files}" >>"${GITHUB_OUTPUT}"
 
   update-task-base-image:
+    name: Task Base Image
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -73,6 +74,7 @@ jobs:
             automated-update
 
   update-tekton-task-bundles:
+    name: Tekton Task Bundles
     needs: generate-matrix
     runs-on: ubuntu-latest
     strategy:
@@ -317,6 +319,7 @@ jobs:
             automated-update
 
   create-kubeopencode-task:
+    name: Version migration via KubeOpenCode
     runs-on: ubuntu-latest
     needs: update-tekton-task-bundles
     if: always()
