@@ -78,12 +78,24 @@ for old_ref in ${OLD_REFS}; do
                 if [[ "${migrate}" == "true" ]]; then
                     old_tag=${latest_main_tag}
                 fi
+                case ${task_name} in
+                    init|git-clone*|apply-tags|prefetch-dependencies*|push-dockerfile*|source-build*)
+                        task_repo=build-pipeline-tasks;;
+                    *fbc*|*opm*|github-sarif-upload|sbom-json-check)
+                        task_repo=konflux-operator-tasks;;
+                    sast*)
+                        task_repo=konflux-sast-tasks;;
+                    scan*|deprecated-image-check)
+                        task_repo=konflux-test-tasks;;
+                    *)
+                        task_repo=build-definitions;;
+                esac
                 # Create JSON object for this migration
                 migration_entry=$(
                     cat <<EOF
   {
     "depName": "${repo}",
-    "link": "https://github.com/konflux-ci/build-definitions/tree/main/task/${task_name}",
+    "link": "https://github.com/konflux-ci/${task_repo}/tree/main/task/${task_name}",
     "currentValue": "${old_tag}",
     "currentDigest": "${old_digest}",
     "newValue": "${latest_main_tag}",
