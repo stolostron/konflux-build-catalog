@@ -188,7 +188,7 @@ spec:
           - name: name
             value: init
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-init:0.4.2@sha256:06801175f298f54099c96f7060d3834b78012e10cd5a098437c917cb18f1efd0
+            value: quay.io/konflux-ci/tekton-catalog/task-init:0.4.3@sha256:fb17ececc359d7e330395d6a562eacbf0089776697ffe1b10c08f91273e6b2c0
           - name: kind
             value: task
         resolver: bundles
@@ -209,7 +209,7 @@ spec:
           - name: name
             value: git-clone-oci-ta
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.2.4@sha256:df3c42d78223f07b40a84dd29e5c8860d14777ffdf150ea08c738770f51216dc
+            value: quay.io/konflux-ci/tekton-catalog/task-git-clone-oci-ta:0.2.5@sha256:d5f39d5a89e8073774bac1a9b9013709c5931921dd4fb1cf662f800e6c5c9ee7
           - name: kind
             value: task
         resolver: bundles
@@ -235,7 +235,7 @@ spec:
           - name: name
             value: prefetch-dependencies-oci-ta
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-prefetch-dependencies-oci-ta:0.4.1@sha256:ba1a3975a1e7b12ee1d11c4885930bf3540f532ddb57b5b66bb8b1122f41fa65
+            value: quay.io/konflux-ci/tekton-catalog/task-prefetch-dependencies-oci-ta:0.6.0@sha256:99611be897902ed47741f143d4ca40d0375d4e920a7142142d359953ce25cd33
           - name: kind
             value: task
         resolver: bundles
@@ -379,7 +379,7 @@ spec:
           - name: name
             value: clair-scan
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.3.2@sha256:5f857f5d8024d04c273113c23b69407244babe0006366a086ef8d9ade3a591a2
+            value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.3.2@sha256:f5b4415db9ac1fba3e11d993a617e0b275d1f0ed2fc669b12c400ed848c39174
           - name: kind
             value: task
         resolver: bundles
@@ -569,7 +569,7 @@ spec:
           - name: name
             value: rpms-signature-scan
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2.1@sha256:53678a169a41152bb6a4ea69d2a345fff8124e857b4146bf9ba45a4f0385a8bb
+            value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2.1@sha256:0b4bf0cf43edc2db2f1507c01c06a201f24485cb5fde3bffcbbe3103fd4a3c36
           - name: kind
             value: task
         resolver: bundles
