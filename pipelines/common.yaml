@@ -313,6 +313,7 @@ spec:
             - $(tasks.fetch-product-metadata.results.image-labels[*])
       runAfter:
         - prefetch-dependencies
+        - fetch-product-metadata
       taskRef:
         params:
           - name: name
