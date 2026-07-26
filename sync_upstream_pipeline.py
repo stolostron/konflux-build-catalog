@@ -348,6 +348,17 @@ def merge_task_entry(
         upstream_task.get("params"),
         prefer_local_value_when_upstream_empty=True,
     )
+    upstream_run_after = upstream_task.get("runAfter")
+    local_run_after = local_task.get("runAfter")
+    if upstream_run_after is None:
+        out["runAfter"] = copy.deepcopy(local_run_after)
+    elif local_run_after is None:
+        out["runAfter"] = copy.deepcopy(upstream_run_after)
+    else:
+        out["runAfter"] = _merge_param_value_lists(
+            upstream_run_after,
+            local_run_after,
+        )
     out["when"] = merge_when_lists(
         upstream_task.get("when"),
         local_task.get("when") if local_task else None,
@@ -476,7 +487,7 @@ def main() -> None:
         "pipeline_file",
         nargs="?",
         default=None,
-        help="(Optional) Pipeline file to sync"
+        help="(Optional) Pipeline file to sync",
     )
     args = parser.parse_args()
 
@@ -508,8 +519,7 @@ def main() -> None:
             original_text = path.read_text(encoding="utf-8")
             local_rt = yaml_rt.load(original_text)
             local_plain = commented_to_plain(local_rt)
-            merged_plain = merge_pipeline(
-                local_plain, upstream_doc, custom_set)
+            merged_plain = merge_pipeline(local_plain, upstream_doc, custom_set)
             text = dump_merged_pipeline(merged_plain, yaml_rt)
             changed = text != original_text
             if changed:
