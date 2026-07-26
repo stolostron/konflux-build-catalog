@@ -79,7 +79,7 @@ for old_ref in ${OLD_REFS}; do
                     old_tag=${latest_main_tag}
                 fi
                 case ${task_name} in
-                    init|git-clone*|apply-tags|prefetch-dependencies*|push-dockerfile*|source-build*)
+                    apply-tags|build-image-index*|buildah*|git-clone*|init|prefetch-dependencies*|push-dockerfile*|source-build*)
                         task_repo=build-pipeline-tasks;;
                     *fbc*|*opm*|github-sarif-upload|sbom-json-check)
                         task_repo=konflux-operator-tasks;;
