@@ -221,6 +221,32 @@ spec:
       workspaces:
         - name: basic-auth
           workspace: git-auth
+    - name: fbc-inject-lifecycle
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+        - name: ociStorage
+          value: $(params.output-image).lifecycle
+        - name: ociArtifactExpiresAfter
+          value: $(params.image-expires-after)
+        - name: CONTEXT
+          value: $(params.path-context)
+        - name: DOCKERFILE
+          value: $(params.dockerfile)
+        - name: BUILD_ARGS
+          value:
+            - $(params.build-args[*])
+      runAfter:
+        - clone-repository
+      taskRef:
+        resolver: bundles
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: fbc-inject-lifecycle-oci-ta
+          - name: bundle
+            value: quay.io/konflux-ci/tekton-catalog/task-fbc-inject-lifecycle-oci-ta:0.1@sha256:da1217be1dcec3d5b5140ea351466607005481397b31f2b81108c4fd3012fbde
     - name: run-opm-command
       params:
         - name: SOURCE_ARTIFACT
@@ -467,29 +493,6 @@ spec:
           operator: in
           values:
             - 'false'
-    - name: fbc-inject-lifecycle
-      taskRef:
-        resolver: bundles
-        params:
-          - name: kind
-            value: task
-          - name: name
-            value: fbc-inject-lifecycle-oci-ta
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-fbc-inject-lifecycle-oci-ta:0.1@sha256:a636970f2f7ff1c8156ad92e3c6bde96ce532a3195b24cc3ed4025d7d609e6eb
-      params:
-        - name: DOCKERFILE
-          value: $(params.dockerfile)
-        - name: CONTEXT
-          value: $(params.path-context)
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-        - name: ociStorage
-          value: $(params.output-image).lifecycle
-        - name: ociArtifactExpiresAfter
-          value: $(params.image-expires-after)
-      runAfter:
-        - clone-repository
   workspaces:
     - name: git-auth
       optional: true
