@@ -19,7 +19,7 @@ spec:
     - name: konflux-application
       description: Name of the Konflux application parsed from the output image
   stepTemplate:
-    image: quay.io/konflux-ci/task-runner:3.1.1@sha256:790df1bb5ea7a9ce4c1717ff341398ff72c99faed1c2e939a3b4a15ff8f4a493
+    image: quay.io/konflux-ci/task-runner:3.1.2@sha256:e272c1e1c60a4ecc72ff9c8d65bc48da534de6f1ce0d5aba79db3ac532d11c35
   steps:
     - name: parse-output-image
       displayName: Parse data from output image
