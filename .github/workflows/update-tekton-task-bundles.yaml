@@ -66,6 +66,8 @@ jobs:
           title: "chore: update Tekton Task base images"
           body: |-
             Automated PR to update Tekton Task base images.
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           branch: tekton-task-base-image-update
           base: main
           add-paths: tasks/
@@ -311,6 +313,8 @@ jobs:
             - ${{ steps.sync_upstream.outputs.new_configuration == 'true' && 'New configuration detected requiring manual review.' || 'No new configuration detected.' }}
 
             ${{ steps.create_issue.outputs.issue-number != '' && format('Closes #{0}', steps.create_issue.outputs.issue-number) || '' }}
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           branch: tekton-bundle-update-${{ matrix.pipeline_file }}
           base: main
           add-paths: pipelines/${{ matrix.pipeline_file }}
