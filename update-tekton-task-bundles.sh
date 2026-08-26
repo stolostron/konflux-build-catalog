@@ -85,7 +85,7 @@ for old_ref in ${OLD_REFS}; do
                         task_repo=konflux-operator-tasks;;
                     sast*)
                         task_repo=konflux-sast-tasks;;
-                    scan*|deprecated-image-check)
+                    *-scan|deprecated-image-check)
                         task_repo=konflux-test-tasks;;
                     *)
                         task_repo=build-definitions;;
