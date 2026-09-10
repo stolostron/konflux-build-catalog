@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sync local Tekton Pipeline YAML files from konflux-ci/build-definitions.
+Sync local Tekton Pipeline YAML files from the konflux-ci org.
 
 - Merge .spec.params (add upstream params, keep downstream-only params).
   For pipeline-level params only, keep `default` from this repo when present.
@@ -20,8 +20,8 @@ Sync local Tekton Pipeline YAML files from konflux-ci/build-definitions.
   emitted as a literal block (|), regardless of key. Indentation matches common
   yq-style 2-space YAML.
 
-Exit codes: 0 if nothing changed, 200 if at least one pipeline file was updated,
-1 on errors (e.g. missing mapped file).
+Exit codes: 0 if nothing changed, 200 if at least one pipeline file was
+updated, 1 on errors (e.g. missing mapped file).
 """
 
 from __future__ import annotations
@@ -97,7 +97,7 @@ def make_roundtrip_yaml() -> YAML:
     return y
 
 
-def load_map(path: Path) -> tuple[Dict[str, List[str]], List[str]]:
+def load_map(path: Path) -> tuple[Dict[str, List[str]], List[str], List[str]]:
     raw = _safe_yaml.load(path.read_text())
     pipelines = raw.get("pipelines")
     if not pipelines or not isinstance(pipelines, dict):
@@ -106,7 +106,10 @@ def load_map(path: Path) -> tuple[Dict[str, List[str]], List[str]]:
     custom = raw.get("custom-tasks") or []
     if not isinstance(custom, list):
         custom = []
-    return pipelines, [str(x) for x in custom]
+    ignore = raw.get("ignore-list") or []
+    if not isinstance(ignore, list):
+        ignore = []
+    return pipelines, [str(x) for x in custom], [str(x) for x in ignore]
 
 
 def fetch_upstream(pipeline: str) -> Dict[str, Any]:
@@ -114,6 +117,11 @@ def fetch_upstream(pipeline: str) -> Dict[str, Any]:
         "https://raw.githubusercontent.com/konflux-ci/build-definitions/"
         f"refs/heads/main/pipelines/{pipeline}/{pipeline}.yaml"
     )
+    if pipeline.startswith("docker-build"):
+        url = (
+            "https://raw.githubusercontent.com/konflux-ci/container-build-catalog/"
+            f"refs/heads/main/pipelines/{pipeline}/{pipeline}.yaml"
+        )
     ua = "konflux-build-catalog-sync"
     req = urllib.request.Request(url, headers={"User-Agent": ua})
     try:
@@ -379,6 +387,7 @@ def sync_task_list(
     local_tasks: Optional[List[Dict[str, Any]]],
     upstream_tasks: Optional[List[Dict[str, Any]]],
     custom_allowed: Set[str],
+    ignore_set: Set[str],
 ) -> List[Dict[str, Any]]:
     """
     Build merged task list: strict upstream order for upstream-defined names,
@@ -393,6 +402,8 @@ def sync_task_list(
 
     result: List[Dict[str, Any]] = []
     for name in up_order:
+        if name in ignore_set:
+            continue
         result.append(merge_task_entry(up_by[name], loc_by.get(name)))
 
     custom_only: List[tuple[str, Dict[str, Any]]] = []
@@ -438,6 +449,7 @@ def merge_pipeline(
     local_doc: Dict[str, Any],
     upstream_doc: Dict[str, Any],
     custom_allowed: Set[str],
+    ignore_set: Set[str],
 ) -> Dict[str, Any]:
     out = copy.deepcopy(local_doc)
     local_spec = local_doc.get("spec") or {}
@@ -451,12 +463,12 @@ def merge_pipeline(
         prefer_local_default=True,
     )
     spec["tasks"] = sync_task_list(
-        local_spec.get("tasks"), upstream_spec.get("tasks"), custom_allowed
+        local_spec.get("tasks"), upstream_spec.get("tasks"), custom_allowed, ignore_set
     )
     spec["finally"] = sync_task_list(
         local_spec.get("finally"),
         upstream_spec.get("finally"),
-        custom_allowed,
+        custom_allowed, ignore_set
     )
     prune_unused_spec_params(out)
     return out
@@ -474,7 +486,7 @@ def dump_merged_pipeline(merged_plain: Dict[str, Any], yaml_rt: YAML) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Sync pipelines/ YAML from konflux-ci/build-definitions "
+            "Sync pipelines/ YAML from the konflux-ci org "
             "per upstream-map.yaml"
         )
     )
@@ -494,8 +506,9 @@ def main() -> None:
     yaml_rt = make_roundtrip_yaml()
     repo_root = Path(__file__).resolve().parent
     map_path = repo_root / "upstream-map.yaml"
-    pipelines_map, custom_tasks = load_map(map_path)
+    pipelines_map, custom_tasks, ignore_list = load_map(map_path)
     custom_set = set(custom_tasks)
+    ignore_set = set(ignore_list)
     pipelines_dir = repo_root / "pipelines"
     if not pipelines_dir.is_dir():
         raise SystemExit(f"Not a directory: {pipelines_dir}")
@@ -519,7 +532,7 @@ def main() -> None:
             original_text = path.read_text(encoding="utf-8")
             local_rt = yaml_rt.load(original_text)
             local_plain = commented_to_plain(local_rt)
-            merged_plain = merge_pipeline(local_plain, upstream_doc, custom_set)
+            merged_plain = merge_pipeline(local_plain, upstream_doc, custom_set, ignore_set)
             text = dump_merged_pipeline(merged_plain, yaml_rt)
             changed = text != original_text
             if changed:
