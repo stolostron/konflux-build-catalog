@@ -97,7 +97,7 @@ def make_roundtrip_yaml() -> YAML:
     return y
 
 
-def load_map(path: Path) -> tuple[Dict[str, List[str]], List[str]]:
+def load_map(path: Path) -> tuple[Dict[str, List[str]], List[str], List[str]]:
     raw = _safe_yaml.load(path.read_text())
     pipelines = raw.get("pipelines")
     if not pipelines or not isinstance(pipelines, dict):
@@ -106,7 +106,10 @@ def load_map(path: Path) -> tuple[Dict[str, List[str]], List[str]]:
     custom = raw.get("custom-tasks") or []
     if not isinstance(custom, list):
         custom = []
-    return pipelines, [str(x) for x in custom]
+    ignore = raw.get("ignore-list") or []
+    if not isinstance(ignore, list):
+        ignore = []
+    return pipelines, [str(x) for x in custom], [str(x) for x in ignore]
 
 
 def fetch_upstream(pipeline: str) -> Dict[str, Any]:
@@ -384,6 +387,7 @@ def sync_task_list(
     local_tasks: Optional[List[Dict[str, Any]]],
     upstream_tasks: Optional[List[Dict[str, Any]]],
     custom_allowed: Set[str],
+    ignore_set: Set[str],
 ) -> List[Dict[str, Any]]:
     """
     Build merged task list: strict upstream order for upstream-defined names,
@@ -398,6 +402,8 @@ def sync_task_list(
 
     result: List[Dict[str, Any]] = []
     for name in up_order:
+        if name in ignore_set:
+            continue
         result.append(merge_task_entry(up_by[name], loc_by.get(name)))
 
     custom_only: List[tuple[str, Dict[str, Any]]] = []
@@ -443,6 +449,7 @@ def merge_pipeline(
     local_doc: Dict[str, Any],
     upstream_doc: Dict[str, Any],
     custom_allowed: Set[str],
+    ignore_set: Set[str],
 ) -> Dict[str, Any]:
     out = copy.deepcopy(local_doc)
     local_spec = local_doc.get("spec") or {}
@@ -456,12 +463,12 @@ def merge_pipeline(
         prefer_local_default=True,
     )
     spec["tasks"] = sync_task_list(
-        local_spec.get("tasks"), upstream_spec.get("tasks"), custom_allowed
+        local_spec.get("tasks"), upstream_spec.get("tasks"), custom_allowed, ignore_set
     )
     spec["finally"] = sync_task_list(
         local_spec.get("finally"),
         upstream_spec.get("finally"),
-        custom_allowed,
+        custom_allowed, ignore_set
     )
     prune_unused_spec_params(out)
     return out
@@ -499,8 +506,9 @@ def main() -> None:
     yaml_rt = make_roundtrip_yaml()
     repo_root = Path(__file__).resolve().parent
     map_path = repo_root / "upstream-map.yaml"
-    pipelines_map, custom_tasks = load_map(map_path)
+    pipelines_map, custom_tasks, ignore_list = load_map(map_path)
     custom_set = set(custom_tasks)
+    ignore_set = set(ignore_list)
     pipelines_dir = repo_root / "pipelines"
     if not pipelines_dir.is_dir():
         raise SystemExit(f"Not a directory: {pipelines_dir}")
@@ -524,7 +532,7 @@ def main() -> None:
             original_text = path.read_text(encoding="utf-8")
             local_rt = yaml_rt.load(original_text)
             local_plain = commented_to_plain(local_rt)
-            merged_plain = merge_pipeline(local_plain, upstream_doc, custom_set)
+            merged_plain = merge_pipeline(local_plain, upstream_doc, custom_set, ignore_set)
             text = dump_merged_pipeline(merged_plain, yaml_rt)
             changed = text != original_text
             if changed:

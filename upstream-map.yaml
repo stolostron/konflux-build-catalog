@@ -7,6 +7,9 @@ pipelines:
     - common-oci-ta.yaml
   fbc-builder:
     - common-fbc.yaml
+ignore-list:
+  - clair-scan
 custom-tasks:
   - fetch-product-metadata
+  - roxctl-scan
   - slack-webhook-notification
