@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sync local Tekton Pipeline YAML files from konflux-ci/build-definitions.
+Sync local Tekton Pipeline YAML files from the konflux-ci org.
 
 - Merge .spec.params (add upstream params, keep downstream-only params).
   For pipeline-level params only, keep `default` from this repo when present.
@@ -20,8 +20,8 @@ Sync local Tekton Pipeline YAML files from konflux-ci/build-definitions.
   emitted as a literal block (|), regardless of key. Indentation matches common
   yq-style 2-space YAML.
 
-Exit codes: 0 if nothing changed, 200 if at least one pipeline file was updated,
-1 on errors (e.g. missing mapped file).
+Exit codes: 0 if nothing changed, 200 if at least one pipeline file was
+updated, 1 on errors (e.g. missing mapped file).
 """
 
 from __future__ import annotations
@@ -114,6 +114,11 @@ def fetch_upstream(pipeline: str) -> Dict[str, Any]:
         "https://raw.githubusercontent.com/konflux-ci/build-definitions/"
         f"refs/heads/main/pipelines/{pipeline}/{pipeline}.yaml"
     )
+    if pipeline.startswith("docker-build"):
+        url = (
+            "https://raw.githubusercontent.com/konflux-ci/container-build-catalog/"
+            f"refs/heads/main/pipelines/{pipeline}/{pipeline}.yaml"
+        )
     ua = "konflux-build-catalog-sync"
     req = urllib.request.Request(url, headers={"User-Agent": ua})
     try:
@@ -474,7 +479,7 @@ def dump_merged_pipeline(merged_plain: Dict[str, Any], yaml_rt: YAML) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Sync pipelines/ YAML from konflux-ci/build-definitions "
+            "Sync pipelines/ YAML from the konflux-ci org "
             "per upstream-map.yaml"
         )
     )
