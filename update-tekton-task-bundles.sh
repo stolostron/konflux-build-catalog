@@ -57,8 +57,17 @@ for old_ref in ${OLD_REFS}; do
 
     main_tags=$(echo "$tags" | grep -E '^[0-9]+(\.[0-9]+)*$')
     latest_main_tag=$(echo "$main_tags" | sort -V | tail -n1)
+    unset target_tag
 
-    if [[ "$old_tag" != "$latest_main_tag" ]]; then
+    if [[ ${old_tag} =~ ^[0-9]+(\.[0-9]+){2}$ ]] &&
+        [[ ${latest_main_tag} =~ ^[0-9]+(\.[0-9]+){2}$ ]] &&
+        [[ ${old_tag%.*} == "${latest_main_tag%.*}" ]]; then
+        log "INFO: current ${old_tag} is the same y-version as ${latest_main_tag};"
+        log "      setting target tag to ${latest_main_tag}"
+        target_tag=${latest_main_tag}
+    elif [[ ${old_tag} == "${latest_main_tag}" ]]; then
+        log "INFO: current ${old_tag} is the same as ${latest_main_tag}"
+    else
         task_name=$(basename "${repo}")
         task_name=${task_name#task-}
 
@@ -76,21 +85,27 @@ for old_ref in ${OLD_REFS}; do
 
             if grep -q "${old_ref}" "${file}" 2>/dev/null; then
                 if [[ "${migrate}" == "true" ]]; then
-                    old_tag=${latest_main_tag}
+                    target_tag=${latest_main_tag}
                 fi
                 case ${task_name} in
-                    apply-tags|build-image-index*|buildah*|git-clone*|init|prefetch-dependencies*|push-dockerfile*|source-build*)
-                        task_repo=build-pipeline-tasks;;
-                    *fbc*|*opm*|github-sarif-upload|sbom-json-check)
-                        task_repo=konflux-operator-tasks;;
-                    sast*)
-                        task_repo=konflux-sast-tasks;;
-                    *-scan|deprecated-image-check)
-                        task_repo=konflux-test-tasks;;
-                    *)
-                        task_repo=build-definitions;;
+                apply-tags | build-image-index* | buildah* | git-clone* | init | prefetch-dependencies* | push-dockerfile* | source-build*)
+                    task_repo=build-pipeline-tasks
+                    ;;
+                *fbc* | *opm* | github-sarif-upload | sbom-json-check)
+                    task_repo=konflux-operator-tasks
+                    ;;
+                sast*)
+                    task_repo=konflux-sast-tasks
+                    ;;
+                *-scan | deprecated-image-check)
+                    task_repo=konflux-test-tasks
+                    ;;
+                *)
+                    task_repo=build-definitions
+                    ;;
                 esac
-                # Create JSON object for this migration
+
+                log "INFO: Creating migration entry for ${task_name} from ${old_tag} to ${latest_main_tag}"
                 migration_entry=$(
                     cat <<EOF
   {
@@ -111,14 +126,11 @@ EOF
         done
     fi
 
-    target_tag=${old_tag}
-    if [[ "${migrate}" == "true" ]]; then
-        target_tag=${latest_main_tag}
-    fi
+    target_tag=${target_tag:-${old_tag}}
     new_digest=$(skopeo inspect --no-tags "docker://${repo}:${target_tag}" | yq '.Digest')
     new_ref="${repo}:${target_tag}@${new_digest}"
     if [[ ${old_ref} == "${new_ref}" ]]; then
-        log "INFO: Reference is already up-to-date. Continuing."
+        log "INFO: Reference for ${target_tag} is already up-to-date. Continuing."
         continue
     fi
     for file in "${FILES[@]}"; do
