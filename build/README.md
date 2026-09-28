@@ -9,3 +9,4 @@ Scripts for generating, validating, and updating custom Tekton tasks in this rep
 | [`update-task-base-image.sh`](./update-task-base-image.sh) | Bumps the digest-pinned base image in each task template to the latest semantic version tag, then regenerates tasks. |
 | [`update-task-refs.sh`](./update-task-refs.sh) | Updates git revision SHAs for local task references in a given pipeline file to the latest commit that changed each task. |
 | [`migrate-task-versions.sh`](./migrate-task-versions.sh) | Runs Tekton task-bundle updates and applies pipeline migrations via `pipeline-migration-tool` across all files in `pipelines/`. |
+| [`refresh-test-catalog.sh`](./refresh-test-catalog.sh) | Fetches the latest catalog and updates the FBC test catalog in [`test/fbc/`](../test/fbc/multicluster-global-hub-operator-rh/) with new releases. |
