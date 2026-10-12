@@ -95,10 +95,10 @@ spec:
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array
-    - default: ""
-      description: Path to a file with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
-      name: build-args-file
-      type: string
+    - default: []
+      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
+      name: build-args-files
+      type: array
     - default: ''
       description: Sets the image created time and the SOURCE_DATE_EPOCH build argument. On its own, it does not change file timestamps inside the layers (set rewrite-timestamp to "true" for that). Leave empty to keep the actual build time.
       name: source-date-epoch
@@ -345,7 +345,7 @@ spec:
           value: 'true'
         - name: BUILD_ARGS_FILES
           value:
-            - $(params.build-args-file)
+            - $(params.build-args-files[*])
       runAfter:
         - clone-repository
       taskRef:
