@@ -95,10 +95,6 @@ spec:
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array
-    - default: []
-      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
-      name: build-args-files
-      type: array
     - default: ''
       description: Sets the image created time and the SOURCE_DATE_EPOCH build argument. On its own, it does not change file timestamps inside the layers (set rewrite-timestamp to "true" for that). Leave empty to keep the actual build time.
       name: source-date-epoch
@@ -115,6 +111,10 @@ spec:
         - linux/x86_64
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
+      type: array
+    - default: []
+      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
+      name: build-args-files
       type: array
     - default: []
       description: Additional tags to add to the image

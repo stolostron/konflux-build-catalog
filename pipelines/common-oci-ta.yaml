@@ -107,10 +107,6 @@ spec:
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array
-    - default: []
-      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
-      name: build-args-files
-      type: array
     - default: "false"
       description: Whether to enable privileged mode, should be used only with remote VMs
       name: privileged-nested
@@ -127,6 +123,10 @@ spec:
       description: When "true", omit the build history (history timestamps, layer metadata, etc.) from the resulting image.
       name: omit-history
       type: string
+    - default: []
+      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
+      name: build-args-files
+      type: array
     - default: []
       description: Additional tags to add to the image
       name: additional-tags

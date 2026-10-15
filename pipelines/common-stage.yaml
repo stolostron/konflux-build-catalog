@@ -67,10 +67,6 @@ spec:
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array
-    - default: []
-      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
-      name: build-args-files
-      type: array
     - default: "false"
       description: Whether to enable privileged mode, should be used only with remote VMs
       name: privileged-nested
@@ -94,6 +90,10 @@ spec:
         - linux/s390x
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
+      type: array
+    - default: []
+      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
+      name: build-args-files
       type: array
     - default: []
       description: Additional tags to add to the image
