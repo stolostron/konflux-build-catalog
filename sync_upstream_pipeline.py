@@ -4,6 +4,7 @@ Sync local Tekton Pipeline YAML files from the konflux-ci org.
 
 - Merge .spec.params (add upstream params, keep downstream-only params).
   For pipeline-level params only, keep `default` from this repo when present.
+  Param names in `ignore-list` are omitted from pipeline and task param lists.
 - Merge .spec.tasks and .spec.finally: upstream order and non-taskRef fields
   from upstream; preserve local taskRef; merge per-entry params (if upstream
   `value` is empty (`[]`, `''`, or absent) and the repo has a non-empty value,
@@ -234,9 +235,11 @@ def merge_param_lists(
     *,
     prefer_local_default: bool = False,
     prefer_local_value_when_upstream_empty: bool = False,
+    ignore_set: Optional[Set[str]] = None,
 ) -> List[Dict[str, Any]]:
     local_params = local_params or []
     upstream_params = upstream_params or []
+    ignore_set = ignore_set or set()
     up_set = {p.get("name") for p in upstream_params if p.get("name")}
     local_by_name = {p.get("name"): p for p in local_params if p.get("name")}
     out: List[Dict[str, Any]] = []
@@ -244,6 +247,8 @@ def merge_param_lists(
         name = up.get("name")
         if not name:
             out.append(copy.deepcopy(up))
+            continue
+        if name in ignore_set:
             continue
         loc = local_by_name.get(name)
         if loc:
@@ -271,7 +276,7 @@ def merge_param_lists(
             out.append(copy.deepcopy(up))
     for loc in local_params:
         name = loc.get("name")
-        if name and name not in up_set:
+        if name and name not in up_set and name not in ignore_set:
             out.append(copy.deepcopy(loc))
     return out
 
@@ -344,10 +349,20 @@ def merge_when_lists(
 
 
 def merge_task_entry(
-    upstream_task: Dict[str, Any], local_task: Optional[Dict[str, Any]]
+    upstream_task: Dict[str, Any],
+    local_task: Optional[Dict[str, Any]],
+    ignore_set: Optional[Set[str]] = None,
 ) -> Dict[str, Any]:
     if local_task is None:
-        return copy.deepcopy(upstream_task)
+        out = copy.deepcopy(upstream_task)
+        out["params"] = merge_param_lists(
+            None,
+            upstream_task.get("params"),
+            ignore_set=ignore_set,
+        )
+        if not out.get("params"):
+            out.pop("params", None)
+        return out
     out = copy.deepcopy(upstream_task)
     if "taskRef" in local_task:
         out["taskRef"] = copy.deepcopy(local_task["taskRef"])
@@ -355,6 +370,7 @@ def merge_task_entry(
         local_task.get("params"),
         upstream_task.get("params"),
         prefer_local_value_when_upstream_empty=True,
+        ignore_set=ignore_set,
     )
     upstream_run_after = upstream_task.get("runAfter")
     local_run_after = local_task.get("runAfter")
@@ -404,7 +420,7 @@ def sync_task_list(
     for name in up_order:
         if name in ignore_set:
             continue
-        result.append(merge_task_entry(up_by[name], loc_by.get(name)))
+        result.append(merge_task_entry(up_by[name], loc_by.get(name), ignore_set))
 
     custom_only: List[tuple[str, Dict[str, Any]]] = []
     for t in local_tasks:
@@ -461,14 +477,19 @@ def merge_pipeline(
         local_spec.get("params"),
         upstream_spec.get("params"),
         prefer_local_default=True,
+        ignore_set=ignore_set,
     )
     spec["tasks"] = sync_task_list(
-        local_spec.get("tasks"), upstream_spec.get("tasks"), custom_allowed, ignore_set
+        local_spec.get("tasks"),
+        upstream_spec.get("tasks"),
+        custom_allowed,
+        ignore_set,
     )
     spec["finally"] = sync_task_list(
         local_spec.get("finally"),
         upstream_spec.get("finally"),
-        custom_allowed, ignore_set
+        custom_allowed,
+        ignore_set,
     )
     prune_unused_spec_params(out)
     return out
@@ -486,8 +507,7 @@ def dump_merged_pipeline(merged_plain: Dict[str, Any], yaml_rt: YAML) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Sync pipelines/ YAML from the konflux-ci org "
-            "per upstream-map.yaml"
+            "Sync pipelines/ YAML from the konflux-ci org " "per upstream-map.yaml"
         )
     )
     parser.add_argument(
@@ -532,7 +552,9 @@ def main() -> None:
             original_text = path.read_text(encoding="utf-8")
             local_rt = yaml_rt.load(original_text)
             local_plain = commented_to_plain(local_rt)
-            merged_plain = merge_pipeline(local_plain, upstream_doc, custom_set, ignore_set)
+            merged_plain = merge_pipeline(
+                local_plain, upstream_doc, custom_set, ignore_set
+            )
             text = dump_merged_pipeline(merged_plain, yaml_rt)
             changed = text != original_text
             if changed:
