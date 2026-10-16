@@ -8,6 +8,8 @@ pipelines:
   fbc-builder:
     - common-fbc.yaml
 ignore-list:
+  - build-args-file
+  - BUILD_ARGS_FILE
   - clair-scan
 custom-tasks:
   - fetch-product-metadata

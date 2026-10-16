@@ -95,10 +95,6 @@ spec:
       description: Array of --build-arg values ("arg=value" strings) for buildah
       name: build-args
       type: array
-    - default: []
-      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
-      name: build-args-files
-      type: array
     - default: ''
       description: Sets the image created time and the SOURCE_DATE_EPOCH build argument. On its own, it does not change file timestamps inside the layers (set rewrite-timestamp to "true" for that). Leave empty to keep the actual build time.
       name: source-date-epoch
@@ -116,6 +112,14 @@ spec:
       description: List of platforms to build the container images on. The available set of values is determined by the configuration of the multi-platform-controller.
       name: build-platforms
       type: array
+    - default: []
+      description: Array of paths to files with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
+      name: build-args-files
+      type: array
+    - default: ""
+      description: The image label key (typically 'konflux.additional-tags') populated with comma-separated image label values to push as image tags.
+      name: additional-tags-from-label
+      type: string
     - default: []
       description: Additional tags to add to the image
       name: additional-tags
@@ -407,6 +411,8 @@ spec:
           value: $(tasks.build-image-index.results.IMAGE_DIGEST)
         - name: ADDITIONAL_TAGS
           value: $(params.additional-tags[*])
+        - name: ADDITIONAL_TAGS_FROM_LABEL
+          value: $(params.additional-tags-from-label)
       runAfter:
         - build-image-index
       taskRef:
