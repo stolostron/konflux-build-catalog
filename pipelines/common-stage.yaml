@@ -430,8 +430,6 @@ spec:
           value: $(params.sast-target-dirs)
         - name: SOURCE_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-        - name: CACHI2_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.PREFETCH_ARTIFACT)
       runAfter:
         - build-image-index
       taskRef:
@@ -485,8 +483,6 @@ spec:
           value: $(params.sast-target-dirs)
         - name: SOURCE_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-        - name: CACHI2_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.PREFETCH_ARTIFACT)
       runAfter:
         - build-image-index
       taskRef:
@@ -513,8 +509,6 @@ spec:
           value: $(params.sast-target-dirs)
         - name: SOURCE_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-        - name: CACHI2_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.PREFETCH_ARTIFACT)
       runAfter:
         - build-image-index
       taskRef:
