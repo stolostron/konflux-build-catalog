@@ -10,9 +10,6 @@ pipelines:
 ignore-list:
   - build-args-file
   - BUILD_ARGS_FILE
-  - CACHI2_ARTIFACT
-  - clair-scan
 custom-tasks:
   - fetch-product-metadata
-  - roxctl-scan
   - slack-webhook-notification
