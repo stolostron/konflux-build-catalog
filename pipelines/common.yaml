@@ -231,7 +231,7 @@ spec:
           - name: url
             value: https://github.com/stolostron/konflux-build-catalog.git
           - name: revision
-            value: 11d1682df4f218df897bf087e364ce46a97e4fd2
+            value: 3102ba58864a2a8b196fc1278ccfe55569f126b1
           - name: pathInRepo
             value: tasks/fetch-product-metadata/fetch-product-metadata.yaml
         resolver: git
@@ -310,6 +310,7 @@ spec:
           value: 'true'
         - name: BUILD_ARGS_FILES
           value:
+            - $(params.build-args-file)
             - $(params.build-args-files[*])
         - name: PREFETCH_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.PREFETCH_ARTIFACT)
@@ -441,7 +442,7 @@ spec:
           - name: name
             value: ecosystem-cert-preflight-checks
           - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-ecosystem-cert-preflight-checks:0.2@sha256:0b1783a11d9066cd4a26fb20251785cf7283258ebe7a1f4e9c2247f6d57b7064
+            value: quay.io/konflux-ci/tekton-catalog/task-ecosystem-cert-preflight-checks:0.2@sha256:864f90a93eaeca2cdd9811ade4378e48bf053594e7a515b73712e71696966aea
           - name: kind
             value: task
         resolver: bundles
