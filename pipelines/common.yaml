@@ -310,6 +310,7 @@ spec:
           value: 'true'
         - name: BUILD_ARGS_FILES
           value:
+            - $(params.build-args-file)
             - $(params.build-args-files[*])
         - name: PREFETCH_ARTIFACT
           value: $(tasks.prefetch-dependencies.results.PREFETCH_ARTIFACT)
