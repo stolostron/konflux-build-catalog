@@ -5,6 +5,9 @@ Sync local Tekton Pipeline YAML files from the konflux-ci org.
 - Merge .spec.params (add upstream params, keep downstream-only params).
   For pipeline-level params only, keep `default` from this repo when present.
   Param names in `ignore-list` are omitted from pipeline and task param lists.
+  `$(params.<name>)` references (including `[*]`, index, and object-key forms)
+  are removed from param values when `<name>` is in `ignore-list`. A param
+  whose value is only those references is omitted.
 - Merge .spec.tasks and .spec.finally: upstream order and non-taskRef fields
   from upstream; preserve local taskRef; merge per-entry params (if upstream
   `value` is empty (`[]`, `''`, or absent) and the repo has a non-empty value,
@@ -46,6 +49,10 @@ _safe_yaml = YAML(typ="safe")
 
 # Tekton pipeline param refs: $(params.name), $(params.name[*]), etc.
 _PARAM_REF_RE = re.compile(r"\$\(params\.([^\[\)\.]+)[\[\)\.]")
+# Full reference, including array index and object key, for removal.
+_PARAM_REF_FULL_RE = re.compile(
+    r"\$\(params\.([^\[\)\.\s]+)(?:\[[^\]]*\])?(?:\.[^)\s]+)?\)"
+)
 
 
 def collect_param_refs_from_obj(obj: Any) -> Set[str]:
@@ -215,6 +222,58 @@ def _param_value_is_empty(value: Any) -> bool:
     return False
 
 
+def _string_is_only_ignored_param_refs(value: str, ignore_set: Set[str]) -> bool:
+    """True if value is only $(params.<ignored>) refs, plus whitespace."""
+    if not ignore_set or "$(" not in value:
+        return False
+    matches = list(_PARAM_REF_FULL_RE.finditer(value))
+    if not matches:
+        return False
+    if any(m.group(1) not in ignore_set for m in matches):
+        return False
+    return _PARAM_REF_FULL_RE.sub("", value).strip() == ""
+
+
+def _value_without_ignored_param_refs(value: Any, ignore_set: Set[str]) -> Any:
+    """Drop param values that are entirely $(params.<name>) for an ignored name."""
+    if not ignore_set or value is None:
+        return value
+    if isinstance(value, str):
+        if _string_is_only_ignored_param_refs(value, ignore_set):
+            return ""
+        return value
+    if isinstance(value, list):
+        return [
+            item
+            for item in value
+            if not (
+                isinstance(item, str)
+                and _string_is_only_ignored_param_refs(item, ignore_set)
+            )
+        ]
+    return value
+
+
+def _param_with_ignored_refs_stripped(
+    param: Dict[str, Any], ignore_set: Set[str]
+) -> Dict[str, Any]:
+    if not ignore_set or "value" not in param:
+        return param
+    new_value = _value_without_ignored_param_refs(param.get("value"), ignore_set)
+    if new_value == param.get("value"):
+        return param
+    out = copy.deepcopy(param)
+    out["value"] = new_value
+    return out
+
+
+def _value_erased_ignored_refs(value: Any, ignore_set: Set[str]) -> bool:
+    """True if a non-empty value becomes empty once ignored param refs are removed."""
+    if not ignore_set or _param_value_is_empty(value):
+        return False
+    return _param_value_is_empty(_value_without_ignored_param_refs(value, ignore_set))
+
+
 def _merge_param_value_lists(up_val: Any, loc_val: Any) -> Optional[List[Any]]:
     """
     If both values are lists, return upstream order plus repo-only items
@@ -250,16 +309,20 @@ def merge_param_lists(
             continue
         if name in ignore_set:
             continue
+        up_work = _param_with_ignored_refs_stripped(up, ignore_set)
         loc = local_by_name.get(name)
-        if loc:
-            merged = copy.deepcopy(loc)
-            for k, v in up.items():
+        loc_work = (
+            _param_with_ignored_refs_stripped(loc, ignore_set) if loc else None
+        )
+        if loc_work:
+            merged = copy.deepcopy(loc_work)
+            for k, v in up_work.items():
                 merged[k] = copy.deepcopy(v)
-            if prefer_local_default and "default" in loc:
-                merged["default"] = copy.deepcopy(loc["default"])
+            if prefer_local_default and "default" in loc_work:
+                merged["default"] = copy.deepcopy(loc_work["default"])
             if prefer_local_value_when_upstream_empty:
-                up_val = up.get("value")
-                loc_val = loc.get("value")
+                up_val = up_work.get("value")
+                loc_val = loc_work.get("value")
                 if _param_value_is_empty(up_val) and not _param_value_is_empty(loc_val):
                     merged["value"] = copy.deepcopy(loc_val)
                 elif (
@@ -271,13 +334,27 @@ def merge_param_lists(
                     merged_list = _merge_param_value_lists(up_val, loc_val)
                     if merged_list is not None:
                         merged["value"] = merged_list
+            # Drop the param when every value was only an ignored reference.
+            # A legitimately empty upstream value is kept.
+            if (
+                _value_erased_ignored_refs(up.get("value"), ignore_set)
+                and _value_erased_ignored_refs(loc.get("value"), ignore_set)
+                and _param_value_is_empty(merged.get("value"))
+            ):
+                continue
             out.append(merged)
         else:
-            out.append(copy.deepcopy(up))
+            if _value_erased_ignored_refs(up.get("value"), ignore_set):
+                continue
+            out.append(copy.deepcopy(up_work))
     for loc in local_params:
         name = loc.get("name")
-        if name and name not in up_set and name not in ignore_set:
-            out.append(copy.deepcopy(loc))
+        if not name or name in up_set or name in ignore_set:
+            continue
+        loc_work = _param_with_ignored_refs_stripped(loc, ignore_set)
+        if _value_erased_ignored_refs(loc.get("value"), ignore_set):
+            continue
+        out.append(copy.deepcopy(loc_work))
     return out
 
 
